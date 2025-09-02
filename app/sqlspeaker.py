@@ -1,12 +1,12 @@
 import os
 import io
-from sqlalchemy import select,Connection, create_engine,update, delete, text
+from sqlalchemy import select,Connection, create_engine,update, delete, text,exists
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement, QuarterlyCashFlow, Irrelevant, StockView, Integer, Date, Float, Dividend, Splitting,
                         StockSpot, Industry)
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, datetime
 import pandas as pd
 
 from sqlalchemy.orm import sessionmaker
@@ -54,7 +54,9 @@ data_types_stock_spots = {
 # connect to the database investments
 with Session() as session:
     try:
-        stock_list = session.query(StockView).all()
+        subq = select(1).where(Irrelevant.stock_id == Stock.stock_id)
+        stmt = select(Stock).where(~subq.exists())  
+        stock_list = session.scalars(stmt).all()
         country_set = { country.country_name: country.country_id for country in session.query(Country).all()}
         sector_set = { sector.sector_name:sector.sector_id for sector in session.query(Sector).all()}
         currency_set = { currency.cur_name:currency.cur_id for currency in session.query(Currency).all()}
@@ -69,27 +71,7 @@ with Session() as session:
 
 
 
-
-def update_shares(stock_symbol: str, shares: int):
-    """
-    Update the shares outstanding of a stock in the database.
-    """
-
-    with Session() as session:
-        try:
-
-            stmt = (update(Stock).where(Stock.symbol == stock_symbol).values(shares_issued=shares))
-            result = session.execute(stmt)
-            session.commit()
-            if result.rowcount == 0:
-                print(f"Error during shares update: {stock_symbol}")
-        except Exception as e:
-            session.rollback()
-            print(f"Error during shares update for stock {stock_symbol}: {e}",flush=True)
-        finally:
-            session.close()
-
-def update_country(country_name: str,stock: StockView):
+def update_country(country_name: str,stock: Stock):
 
     try:
         # Attempt to insert the country (trigger prevents duplicates)
@@ -101,7 +83,6 @@ def update_country(country_name: str,stock: StockView):
 
                     session.commit()
                     country_set[country_name] = country.country_id
-                    # print(f"Added country {country_name}")
 
                 except Exception as e:
                     session.rollback()
@@ -109,29 +90,14 @@ def update_country(country_name: str,stock: StockView):
                 finally:
                     session.close()
 
-        if stock.country_id != country_set[country_name] or stock.country_id is None:
-            with Session() as session:
-                try:
-
-                    stmt = (update(Stock).where(Stock.symbol == stock.symbol).values(country_id=country_set[country_name]))
-                    result = session.execute(stmt)
-                    session.commit()
-                    # print(f"Updated country for {stock.symbol} to {country_name}")
-                    if result.rowcount == 0:
-                        print(f"Error during country update: {stock.symbol}")
-                except Exception as e:
-                    session.rollback()
-                    print(f"Error during country update: {e}")
-                finally:
-                    session.close()
+        return country_set[country_name]
 
 
-        # print(f"Updated country for {stock.symbol} to {country_name}")
     except KeyError:
         return "KeyError"
 
 # insert stocks
-def update_currency(cur: str, stock: StockView):
+def update_currency(cur: str, stock: Stock):
     """
         Update the currency of a stock in the database.
         Note: this Currency  is the currency of the finencial data of the stock
@@ -154,23 +120,12 @@ def update_currency(cur: str, stock: StockView):
                 finally:
                     session.close()
 
-        if stock.cur_id != currency_set[cur] or stock.cur_id is None:
-            with Session() as session:
-                try:
-                    stmt = (update(Stock).where(Stock.symbol == stock.symbol).values(cur_id=currency_set[cur]))
-                    result = session.execute(stmt)
-                    session.commit()
-                    # print(f"Updated currency for {stock.symbol} to {cur}")
-                except Exception as e:
-                    session.rollback()
-                    print(f"Error during currency update {cur} {stock.symbol}: {e}",flush=True)
-                finally:
-                    session.close()
-        # print(f"Updated currency for {stock.symbol} to {cur}")
+        return currency_set[cur]
+
     except KeyError:
         return "KeyError"
 
-def update_sector(sector_name:str, stock:StockView):
+def update_sector(sector_name:str, stock:Stock):
     """
     Update the sector of a stock in the database.
     """
@@ -192,23 +147,12 @@ def update_sector(sector_name:str, stock:StockView):
                 finally:
                     session.close()
 
-        if stock.sector_id != sector_set[sector_name] or stock.sector_id is None:
-            with Session() as session:
-                try:
-                    stmt = (update(Stock).where(Stock.symbol == stock.symbol).values(sector_id=sector_set[sector_name]))
-                    result = session.execute(stmt)
-                    session.commit()
-                    # print(f"Updated sector for {stock.symbol} to {sector_name}")
-                except Exception as e:
-                    session.rollback()
-                    print(f"Error during sector update {sector_name} {stock.symbol}: {e} ",flush=True)
-                finally:
-                    session.close()
-        # print(f"Updated sector for {stock.symbol} to {sector_name}")
+        return sector_set[sector_name]
+
     except KeyError:
         return "KeyError"
 
-def update_industry(industry_name:str, stock:StockView):
+def update_industry(industry_name:str, stock:Stock):
     """
     Update the industry of a stock in the database.
     """
@@ -227,21 +171,21 @@ def update_industry(industry_name:str, stock:StockView):
                     session.rollback()
                 finally:
                     session.close()
-        if stock.industry_id != industry_set[industry_name] or stock.industry_id is None:
-            with Session() as session:
-                try:
-                    stmt = (update(Stock).where(Stock.symbol == stock.symbol).values(industry_id=industry_set[industry_name]))
-                    result = session.execute(stmt)
-                    session.commit()
-                    # print(f"Updated industry for {stock.symbol} to {industry_name}")
-                except Exception as e:
-                    session.rollback()
-                    print(f"Error during industry update {industry_name} {stock.symbol}: {e} ",flush=True)
-                finally:
-                    session.close()
-        # print(f"Updated industry for {stock.symbol} to {industry_name}")
+        return industry_set[industry_name]
     except KeyError:
         return "KeyError"
+
+
+def update_stock_object(stock: Stock):
+    with Session() as session:
+        try:
+            stock.last_update = datetime.now().date()
+            session.add(stock)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            print(f"Error during stock object update for stock {stock.symbol}: {e}",flush=True)
+
 
 def insert_into_irrelevant(stock_id:int):
     with Session() as session:
@@ -255,100 +199,6 @@ def insert_into_irrelevant(stock_id:int):
         finally:
             session.close()
 # update the market capacity of a stock
-
-def update_last_update(stock_symbol: str, last_update: date):
-    """
-    Update the last update of a stock in the database.
-    """
-
-    with Session() as session:
-        try:
-            stmt = (update(Stock).where(Stock.symbol == stock_symbol).values(last_update=last_update))
-            result = session.execute(stmt)
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Error during last update for stock {stock_symbol}: {e}",flush=True)
-        finally:
-            session.close()
-
-def insert_stockspots(hist: pd.DataFrame):
-
-
-    try:
-        with Session() as session:
-
-            session.delete(StockSpot).where(StockSpot.stock_id == hist['stock_id'].iloc[0])
-            session.delete(Dividend).where(Dividend.stock_id == hist['stock_id'].iloc[0])
-            session.delete(Splitting).where(Splitting.stock_id == hist['stock_id'].iloc[0])
-        # handle the dividends
-            divs = hist[["stock_id", "spot_date", "dividends"]].where(hist['dividends'] > 0).dropna()
-            divs = divs.rename(columns={"spot_date": "div_date", "dividends": 'amount'})
-            divslist = [
-                Dividend(stock_id=row['stock_id'], div_date=row['div_date'], amount=row['amount']) for _, row in divs.iterrows()
-            ]
-            
-
-
-
-            # handle the stock_splits
-            splt = hist[["stock_id", "spot_date", "stock_splits"]].where(hist['stock_splits'] > 0).dropna()
-            splt = splt.rename(columns={"spot_date": "split_date", 'stock_splits': 'ratio'})
-            spltlist = [
-                Splitting(stock_id=row['stock_id'], split_date=row['split_date'], ratio=row['ratio']) for _, row in splt.iterrows()
-            ]
-            stockspotlist = [
-                StockSpot(
-                    stock_id=row['stock_id'],
-                    spot_date=row['spot_date'],
-                    open_value=row['open_value'],
-                    close_value=row['close_value'], 
-                    volume=row['volume'], 
-                    high_value=row['high_value'], 
-                    low_value=row['low_value']) for _, row in hist.iterrows()
-            ]
-            session.bulk_save_objects(spltlist)
-            session.bulk_save_objects(divslist)
-            session.bulk_save_objects(stockspotlist)
-            session.commit()
-
-        # fixing hist
-
-
-    except Exception as e:
-        session.rollback()
-        # print(f"Error during stockspots insertion: {hist['stock_id'].iloc[0]}")
-        pass
-    finally:
-        session.close()
-# insert stock_splits
-def insert_splits(splt: pd.DataFrame,conn:Connection):
-    data_types_splits = {
-        "stock_id": Integer,
-        "split_date": Date,
-        "ratio": Float
-    }
-
-    try:
-        splt.to_sql('splitting', conn, index=False, if_exists='append', dtype=data_types_splits)
-
-    except Exception as e:
-        print(f"Error during splits insertion"
-              f": {e}",flush=True)
-
-# insert dividends
-def insert_dividends(divs: pd.DataFrame , conn:Connection):
-    data_types_dividends = {
-        "stock_id": Integer,
-        "div_date": Date,
-        "amount": Float
-    }
-
-    try:
-        divs.to_sql('dividends', conn, index=False, if_exists='append', dtype=data_types_dividends)
-
-    except Exception as e:
-        print(f"Error during dividends insertion: {e}",flush=True)
 
 
 
@@ -365,7 +215,7 @@ def _copy_df(raw_conn, df: pd.DataFrame, table: str, cols: list[str]) -> None:
         buf,
     )
 
-def refresh_single_stock( hist_all: pd.DataFrame, stock_id: int) -> None:
+def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
     """
     מחליף את כל הנתונים של מניה אחת (stock_spots, dividends, splitting) לפי hist_all.
     - מוחק כל מה שקיים למניה הזו בשלוש הטבלאות.

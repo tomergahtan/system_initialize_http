@@ -74,21 +74,6 @@ class Stock(Base):
     industry_id: Mapped[int] = mapped_column(ForeignKey('industry.industry_id'))
     last_update: Mapped[Date] = mapped_column(Date, nullable=True)
 
-    # stock_exchange: Mapped[StockExchange] = relationship("StockExchange", back_populates="stocks")
-    # currency: Mapped[Currency] = relationship("Currency", back_populates="stocks")
-    # sector: Mapped[Sector] = relationship("Sector", back_populates="stocks")
-    # country: Mapped[Country] = relationship("Country", back_populates="stocks")
-    #
-    # spots: Mapped[list["StockSpot"]] = relationship("StockSpot", back_populates="stock")
-    # balances_annual: Mapped[list["AnnualBalanceSheet"]] = relationship("AnnualBalanceSheet", back_populates="stock")
-    # balances_quarterly: Mapped[list["QuarterlyBalanceSheet"]] = relationship("QuarterlyBalanceSheet", back_populates="stock")
-    # income_annual: Mapped[list["AnnualIncomeStatement"]] = relationship("AnnualIncomeStatement", back_populates="stock")
-    # income_quarterly: Mapped[list["QuarterlyIncomeStatement"]] = relationship("QuarterlyIncomeStatement", back_populates="stock")
-    # cash_annual: Mapped[list["AnnualCashFlow"]] = relationship("AnnualCashFlow", back_populates="stock")
-    # cash_quarterly: Mapped[list["QuarterlyCashFlow"]] = relationship("QuarterlyCashFlow", back_populates="stock")
-    # dividends: Mapped[list["Dividend"]] = relationship("Dividend", back_populates="stock")
-    # splittings: Mapped[list["Splitting"]] = relationship("Splitting", back_populates="stock")
-    # irrelevant: Mapped[list["Irrelevant"]] = relationship("Irrelevant", back_populates="stock")
 
     def __repr__(self):
         return f"<Stock(stock_id={self.stock_id}, symbol='{self.symbol}')>"
@@ -99,7 +84,6 @@ class Irrelevant(Base):
 
     stock_id: Mapped[int] = mapped_column(ForeignKey('stocks.stock_id'), primary_key=True)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="irrelevant")
 
     def __repr__(self):
         return f"<Irrelevant(stock_id={self.stock_id})>"
@@ -116,7 +100,6 @@ class StockSpot(Base):
     low_value: Mapped[float] = mapped_column()
     volume: Mapped[float] = mapped_column()
 
-    # stock: Mapped["Stock"] = relationship("Stock", back_populates="spots")
     def __repr__(self):
         return f"<StockSpot(stock_id={self.stock_id}, spot_date={self.spot_date})>"
 
@@ -128,7 +111,6 @@ class Splitting(Base):
     split_date: Mapped[date] = mapped_column(primary_key=True)
     ratio: Mapped[float] = mapped_column(Float)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="splittings")
 
     def __repr__(self):
         return f"<Splitting(stock_id={self.stock_id}, split_date={self.split_date}, ratio={self.ratio})>"
@@ -141,7 +123,6 @@ class Dividend(Base):
     div_date: Mapped[date] = mapped_column(primary_key=True)
     amount: Mapped[float] = mapped_column(Float)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="dividends")
 
     def __repr__(self):
         return f"<Dividend(stock_id={self.stock_id}, div_date={self.div_date}, amount={self.amount})>"
@@ -154,7 +135,6 @@ class AnnualBalanceSheet(Base):
     publish_date: Mapped[date] = mapped_column(primary_key=True)
     data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="balances_annual")
 
     def __repr__(self):
         return f"<AnnualBalanceSheet(stock_id={self.stock_id}, publish_date={self.publish_date})>"
@@ -166,7 +146,6 @@ class QuarterlyBalanceSheet(Base):
     publish_date: Mapped[date] = mapped_column(primary_key=True)
     data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="balances_quarterly")
 
     def __repr__(self):
         return f"<QuarterlyBalanceSheet(stock_id={self.stock_id}, publish_date={self.publish_date})>"
@@ -178,7 +157,6 @@ class AnnualIncomeStatement(Base):
     publish_date: Mapped[date] = mapped_column(primary_key=True)
     data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="income_annual")
 
     def __repr__(self):
         return f"<AnnualIncomeStatement(stock_id={self.stock_id}, publish_date={self.publish_date})>"
@@ -190,7 +168,6 @@ class QuarterlyIncomeStatement(Base):
     publish_date: Mapped[date] = mapped_column(primary_key=True)
     data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="income_quarterly")
 
     def __repr__(self):
         return f"<QuarterlyIncomeStatement(stock_id={self.stock_id}, publish_date={self.publish_date})>"
@@ -202,7 +179,6 @@ class AnnualCashFlow(Base):
     publish_date: Mapped[date] = mapped_column(primary_key=True)
     data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
 
-    # stock: Mapped[Stock] = relationship("Stock", back_populates="cash_annual")
 
     def __repr__(self):
         return f"<AnnualCashFlow(stock_id={self.stock_id}, publish_date={self.publish_date})>"
