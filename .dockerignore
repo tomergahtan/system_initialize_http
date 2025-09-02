@@ -1,0 +1,28 @@
+# Ignore Dockerfile
+Dockerfile
+
+# Ignore specific files
+try.py
+psql.txt
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Ignore virtual environments
+.venv/
+env/
+ENV/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore other common clutter
+*.log
+*.sqlite3
+*.db
+*.swp
+*.bak
+*.tmp

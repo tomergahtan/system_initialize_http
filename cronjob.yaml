@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: monthly-routine-cronjob
+spec:
+  schedule: "0 3 1 * *"  # Monthly on the 1st at 3 AM UTC
+  concurrencyPolicy: Replace
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: system-initialize-container
+            image: tomergahtan/system-initialize:1.0.0
+            imagePullPolicy: Always
+            env:
+            - name: PSQL
+              valueFrom:
+                secretKeyRef:
+                  name: my-secrets
+                  key: PSQL
+            - name: TZ
+              value: "Asia/Jerusalem"
+            volumeMounts:
+            - name: logs-volume
+              mountPath: /logs
+          restartPolicy: OnFailure
+          volumes:
+          - name: logs-volume
+            hostPath:
+              path: /mnt/daily_routine_logs
