@@ -7,7 +7,7 @@ import curl_cffi
 
 from app.db_orm import Stock
 from .sqlspeaker import update_country, update_sector, update_currency, insert_stockspots, \
-    financial_insert_function, update_last_update, stock_list, refresh_single_stock, update_industry, update_stock_object
+    financial_insert_function, stock_list, update_industry, update_stock_object
 
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
@@ -196,62 +196,46 @@ def info_generate(symbol_list: list[Stock]):
         try:
             stock = symbol_list[index]
             stock_data = yf.Ticker(stock.symbol)
-
-            # print(f"working on {stock.symbol}")
+            stock_id = stock.stock_id
+            stock_symbol = stock.symbol
+           
             inf = stock_data.info
             
 
 
-            hist = history(share=stock_data, start_date=date(2020, 1, 1), stock_id=stock.stock_id)
+            hist = history(share=stock_data, start_date=date(2020, 1, 1), stock_id=stock_id)
 
             if type(hist) == DataFrame:
 
-                refresh_single_stock(hist_all=hist, stock_id=stock.stock_id)
+                insert_stockspots(hist_all=hist, stock_id=stock_id)
            
-                # print(f"done with {stock.symbol} history")
-
-            shares_issued = inf.get('sharesOutstanding')
-            stock_country = inf.get('country')
-            industry = inf.get('industry')
-            sect = inf.get('sector')
-            curr = inf.get("financialCurrency")
-            # get the shares issued
-
-            if shares_issued:
-                stock.shares_issued = shares_issued
-            #update_country
-            if stock_country:
-                stock.country_id = update_country(country_name=stock_country.title(), stock=stock)
-
-            #update_sector
-            if sect:
-                stock.sector_id = update_sector(sector_name=sect.title(), stock=stock)
-
-            #update industry
-            if industry:
-                stock.industry_id = update_industry(industry_name=industry.title(), stock=stock)
-
-            #update currency    
-            if curr:
-                stock.cur_id = update_currency(cur=curr, stock=stock)
-
-
-
-            update_stock_object(stock=stock)
+            values = {
+                'shares_issued': inf.get('sharesOutstanding'),
+                'country_id': update_country( inf.get('country')),
+                'industry_id': update_industry( inf.get('industry')),
+                'sector_id': update_sector( inf.get('sector')),
+                'cur_id': update_currency( inf.get("financialCurrency"))
+            }
+            
+            
+           
+        
+            
+            update_stock_object(stock_id=stock_id, values=values)
 
             #annual Balancesheet
             ann_bs = get_annual_balancesheet(share=stock_data)
 
             if isinstance(ann_bs, DataFrame):
 
-                financial_insert_function(df=ann_bs, table_name="annual_balance_sheet",stock_id=stock.stock_id)
+                financial_insert_function(df=ann_bs, table_name="annual_balance_sheet",stock_id=stock_id)
             else:
                 pass
 
             # Quarterly Balancesheet
             quarter_bs = get_quarterly_balancesheet(share=stock_data)
             if isinstance(quarter_bs, DataFrame):
-                financial_insert_function(df=quarter_bs, table_name="quarterly_balance_sheet",stock_id=stock.stock_id)
+                financial_insert_function(df=quarter_bs, table_name="quarterly_balance_sheet",stock_id=stock_id)
             else:
                 pass
 
@@ -259,7 +243,7 @@ def info_generate(symbol_list: list[Stock]):
             ann_is = get_annual_income_statement(share=stock_data)
 
             if isinstance(ann_is, DataFrame):
-                financial_insert_function(df=ann_is, table_name="annual_income_statement",stock_id=stock.stock_id)
+                financial_insert_function(df=ann_is, table_name="annual_income_statement",stock_id=stock_id)
             else:
                 pass
 
@@ -267,25 +251,25 @@ def info_generate(symbol_list: list[Stock]):
             quarter_is = get_quarterly_income_statement(share=stock_data)
 
             if isinstance(quarter_is, DataFrame):
-                financial_insert_function(df=quarter_is, table_name="quarterly_income_statement",stock_id=stock.stock_id)
+                financial_insert_function(df=quarter_is, table_name="quarterly_income_statement",stock_id=stock_id)
             else:
                 pass
 
             # Annual Cashflow
             ann_cf = get_annual_cashflow(share=stock_data)
             if isinstance(ann_cf, DataFrame):
-                financial_insert_function(df=ann_cf, table_name="annual_cash_flow",stock_id=stock.stock_id)
+                financial_insert_function(df=ann_cf, table_name="annual_cash_flow",stock_id=stock_id)
             else:
                 pass
 
             # Quarterly Cashflow
             quarter_cf = get_quarterly_cashflow(share=stock_data)
             if isinstance(quarter_cf, DataFrame):
-                financial_insert_function(df=quarter_cf, table_name="quarterly_cash_flow",stock_id=stock.stock_id)
+                financial_insert_function(df=quarter_cf, table_name="quarterly_cash_flow",stock_id=stock_id)
             else:
                 pass
 
-            print(f'all done for ticker {stock.symbol}',flush=True)
+            print(f'all done for ticker {stock_symbol}',flush=True)
             index += 1
             trial = 0
 

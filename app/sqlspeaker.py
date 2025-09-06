@@ -5,7 +5,7 @@ from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement, QuarterlyCashFlow, Irrelevant, StockView, Integer, Date, Float, Dividend, Splitting,
                         StockSpot, Industry)
-from dotenv import load_dotenv
+
 from datetime import date, datetime
 import pandas as pd
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.exc import DBAPIError
 
-load_dotenv('.envrc')
+
 
 
 
@@ -71,122 +71,102 @@ with Session() as session:
 
 
 
-def update_country(country_name: str,stock: Stock):
-
-    try:
+def update_country(country_name: str):
         # Attempt to insert the country (trigger prevents duplicates)
-        if not country_name in country_set:
-            with Session() as session:
-                try:
-                    country = Country(country_name=country_name)
-                    session.add(country)
+    if not country_name in country_set and country_name is not None :
+        with Session() as session:
+            try:
+                country = Country(country_name=country_name)
+                session.add(country)
+                session.commit()
+                country_set[country_name] = country.country_id
 
-                    session.commit()
-                    country_set[country_name] = country.country_id
-
-                except Exception as e:
-                    session.rollback()
-                    print(f"Error during country insertion {country_name} {stock.symbol}: {e}",flush=True)
-                finally:
-                    session.close()
-
-        return country_set[country_name]
+            except Exception as e:
+                session.rollback()
+                print(f"Error during country insertion {country_name}: {e}",flush=True)
+            finally:
+                session.close()
+    return country_set.get(country_name)
 
 
-    except KeyError:
-        return "KeyError"
 
 # insert stocks
-def update_currency(cur: str, stock: Stock):
+def update_currency(cur: str):
     """
-        Update the currency of a stock in the database.
-        Note: this Currency  is the currency of the finencial data of the stock
-        and not the currency of the stock itself.
-        """
-
-    try:
+    Update the currency of a stock in the database.
+    Note: this Currency  is the currency of the finencial data of the stock
+    and not the currency of the stock itself.
+    """
         # Attempt to insert the currency (trigger prevents duplicates)
-        if not cur in currency_set:
-            with Session() as session:
-                try:
-                    currency = Currency(cur_name=cur)
-                    session.add(currency)
-                    session.commit()
-                    currency_set[cur] = currency.cur_id
-                    # print(f"Added currency {cur}")
-                except Exception as e:
-                    print(f"Error during currency insertion with stock {stock.symbol}: {e}",flush=True)
-                    session.rollback()
-                finally:
-                    session.close()
+    if not cur in currency_set and cur is not None:
+        with Session() as session:
+            try:
+                currency = Currency(cur_name=cur)
+                session.add(currency)
+                session.commit()
+                currency_set[cur] = currency.cur_id
+                # print(f"Added currency {cur}")
+            except Exception as e:
+                print(f"Error during currency insertion with stock {cur}: {e}",flush=True)
+                session.rollback()
+            finally:
+                session.close()
+    return currency_set.get(cur)
 
-        return currency_set[cur]
-
-    except KeyError:
-        return "KeyError"
-
-def update_sector(sector_name:str, stock:Stock):
+def update_sector(sector_name:str):
     """
     Update the sector of a stock in the database.
     """
-
-    try:
         # Attempt to insert the sector (trigger prevents duplicates)
-        if not sector_name in sector_set:
-            with Session() as session:
-                try:
-                    sector = Sector(sector_name=sector_name)
-                    session.add(sector)
-                    session.commit()
-                    sector_set[sector_name] = sector.sector_id
-                    # print(f"Added sector {sector_name}")
-                except Exception as e:
-                    print(f"Error during sector insertion {sector_name} {stock.symbol
-                    }: {e}",flush=True)
-                    session.rollback()
-                finally:
-                    session.close()
+    if not sector_name in sector_set and sector_name is not None:
+        with Session() as session:
+            try:
+                sector = Sector(sector_name=sector_name)
+                session.add(sector)
+                session.commit()
+                sector_set[sector_name] = sector.sector_id
+                # print(f"Added sector {sector_name}")
+            except Exception as e:
+                print(f"Error during sector insertion {sector_name}: {e}",flush=True)
+                session.rollback()
+            finally:
+                session.close()
+    return sector_set.get(sector_name)
 
-        return sector_set[sector_name]
-
-    except KeyError:
-        return "KeyError"
-
-def update_industry(industry_name:str, stock:Stock):
+def update_industry(industry_name:str):
     """
     Update the industry of a stock in the database.
     """
 
-    try:
+
         # Attempt to insert the industry (trigger prevents duplicates)
-        if not industry_name in industry_set:
-            with Session() as session:
-                try:
-                    industry = Industry(industry_name=industry_name)
-                    session.add(industry)
-                    session.commit()
-                    industry_set[industry_name] = industry.industry_id
-                except Exception as e:
-                    print(f"Error during industry insertion {industry_name} {stock.symbol}: {e} ",flush=True)
-                    session.rollback()
-                finally:
-                    session.close()
-        return industry_set[industry_name]
-    except KeyError:
-        return "KeyError"
+    if not industry_name in industry_set and industry_name is not None:
+        with Session() as session:
+            try:
+                industry = Industry(industry_name=industry_name)
+                session.add(industry)
+                session.commit()
+                industry_set[industry_name] = industry.industry_id
+            except Exception as e:
+                print(f"Error during industry insertion {industry_name}: {e} ",flush=True)
+                session.rollback()
+            finally:
+                session.close()
+    return industry_set.get(industry_name)
 
-
-def update_stock_object(stock: Stock):
+def update_stock_object(stock_id: int, values: dict):
+    values['last_update'] = datetime.now().date()
+    values = {k: v for k, v in values.items() if v is not None}
     with Session() as session:
         try:
-            stock.last_update = datetime.now().date()
-            session.add(stock)
+            session.execute(update(Stock).where(Stock.stock_id == stock_id).values(**values))   
             session.commit()
         except Exception as e:
             session.rollback()
-            print(f"Error during stock object update for stock {stock.symbol}: {e}",flush=True)
-
-
+            print(f"Error during stock object update for stock {stock_id}: {e}",flush=True)
+        finally:
+            session.close()
+            
 def insert_into_irrelevant(stock_id:int):
     with Session() as session:
         try:
@@ -199,8 +179,6 @@ def insert_into_irrelevant(stock_id:int):
         finally:
             session.close()
 # update the market capacity of a stock
-
-
 
 def _copy_df(raw_conn, df: pd.DataFrame, table: str, cols: list[str]) -> None:
     """COPY FROM STDIN ל־table (טבלת temp)."""
