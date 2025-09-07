@@ -1,35 +1,18 @@
 import os
 import io
-from sqlalchemy import select,Connection, create_engine,update, delete, text,exists
+from sqlalchemy import select, create_engine,update,  text
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
-                        QuarterlyBalanceSheet, QuarterlyIncomeStatement, QuarterlyCashFlow, Irrelevant, StockView, Integer, Date, Float, Dividend, Splitting,
-                        StockSpot, Industry)
-
-from datetime import date, datetime
+                        QuarterlyBalanceSheet, QuarterlyIncomeStatement,
+                         QuarterlyCashFlow, Irrelevant, Integer, Date, Float,
+                        Industry)
+from datetime import datetime
 import pandas as pd
-
 from sqlalchemy.orm import sessionmaker
-
 from sqlalchemy.exc import DBAPIError
-
-
-
-
-
 import logging
 logging.getLogger('yfinance').setLevel(logging.CRITICAL)
-logger = logging.getLogger('my_app')
-logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler('../../output.log', mode='a')
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
-# Add the handler to your logger
-logger.addHandler(file_handler)
-
-# Example usage
-logger.info("This log will appear in output.log")
-logger.debug("Debugging information here.")
 psql = os.getenv('PSQL')
 
 engine_dest = create_engine(psql)
@@ -68,9 +51,6 @@ with Session() as session:
         session.close()
 
 
-
-
-
 def update_country(country_name: str):
         # Attempt to insert the country (trigger prevents duplicates)
     if not country_name in country_set and country_name is not None :
@@ -87,8 +67,6 @@ def update_country(country_name: str):
             finally:
                 session.close()
     return country_set.get(country_name)
-
-
 
 # insert stocks
 def update_currency(cur: str):
@@ -175,7 +153,7 @@ def insert_into_irrelevant(stock_id:int):
             session.commit()
         except Exception as e:
             session.rollback()
-            logger.error(f"Error during irrelevant insertion stock id {stock_id}: {e}",flush=True)
+
         finally:
             session.close()
 # update the market capacity of a stock
@@ -303,8 +281,7 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
         except Exception as e:
            
             print(f"Error during refresh_single_stock: {e}",flush=True)
-        
-
+    
 # a function that gets
 
 def financial_insert_function(df: pd.DataFrame, stock_id: int,table_name:str):
