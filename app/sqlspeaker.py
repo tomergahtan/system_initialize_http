@@ -13,7 +13,7 @@ from sqlalchemy.exc import DBAPIError
 import logging
 logging.getLogger('yfinance').setLevel(logging.CRITICAL)
 
-psql = os.getenv('PSQL')
+psql =os.getenv('PSQL')
 
 engine_dest = create_engine(psql)
 Session = sessionmaker(bind=engine_dest)
@@ -37,9 +37,7 @@ data_types_stock_spots = {
 # connect to the database investments
 with Session() as session:
     try:
-        subq = select(1).where(Irrelevant.stock_id == Stock.stock_id)
-        stmt = select(Stock).where(~subq.exists())  
-        stock_list = session.scalars(stmt).all()
+
         country_set = { country.country_name: country.country_id for country in session.query(Country).all()}
         sector_set = { sector.sector_name:sector.sector_id for sector in session.query(Sector).all()}
         currency_set = { currency.cur_name:currency.cur_id for currency in session.query(Currency).all()}

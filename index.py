@@ -1,38 +1,51 @@
-from fastapi import FastAPI, HTTPException
-from typing import Optional
-import uvicorn 
+from app.consumer import conn,QUEUE,ch
 from app.initializing_the_system import info_generate
-from app.sqlspeaker import Session, StockView
-app = FastAPI()
+from app.sqlspeaker import Session, Stock
+from typing import Optional
+import json
 
-def get_stock_by_id(stock_id: int) -> Optional[StockView]:
+def get_stock_by_id(stock_id: int) -> Optional[Stock]:
     with Session() as session:
-        stock = session.query(StockView).filter(StockView.stock_id == stock_id).first()
-        return stock
+        try:    
+            stock = session.query(Stock).filter(Stock.stock_id == stock_id).first()
+            return stock
+        except Exception as e:
+            print(f"Error getting stock by id: {e}")
+            return None
+        finally:
+            session.close()
     
-
-
-
-@app.get("/")
-def healthcheck():
-    return {"status": "ok"}
-
-
-@app.get("/initialize/{stock_id}")
-def initialize_stock(stock_id: int):
-    stock = get_stock_by_id(stock_id)
-    if stock is None:
-        raise HTTPException(status_code=404, detail="stock_id not found")
+def callback(ch, method, properties, body):
     try:
-        info_generate([stock])
-        return {"status": "success", "stock_id": stock.stock_id, "symbol": stock.symbol}
+        data = json.loads(body.decode())
+        
+        
+        stock = get_stock_by_id(data["stock_id"])
+        if stock is not None:
+            info_generate([stock])
+            print(" [x] Stock initialized:", stock.stock_id)
+        else:
+            print(" [x] Stock not found:", data["stock_id"])
+        ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"initialization failed: {e}")
+        print(" [!] Bad message:", body, e)
+    # Acknowledge
 
 
-if __name__ == "__main__":
-    print("app initialized")
-    uvicorn.run("index:app", host="0.0.0.0", port=8000,reload=True)
 
 
+# Ensure QoS so we don’t flood this consumer
+ch.basic_qos(prefetch_count=10)
+
+# Attach to the existing queue
+ch.basic_consume(queue=QUEUE, on_message_callback=callback)
+
+
+
+print(f" [*] Waiting for messages on queue '{QUEUE}'… CTRL+C to exit.")
+try:
+    ch.start_consuming()
+except KeyboardInterrupt:
+    print("Stopping consumer…")
+    conn.close()
 

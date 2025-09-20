@@ -195,32 +195,3 @@ class QuarterlyCashFlow(Base):
     def __repr__(self):
         return f"<QuarterlyCashFlow(stock_id={self.stock_id}, publish_date={self.publish_date})>"
 
-class StockView(Base):
-    __tablename__ = 'stockview'
-
-    stock_id: Mapped[int] = mapped_column(primary_key=True)
-    symbol: Mapped[str] = mapped_column(String)
-    se_name: Mapped[str] = mapped_column(String)
-    shares_issued: Mapped[int] = mapped_column(BigInteger)
-    cur_id: Mapped[int] = mapped_column(Integer)
-    sector_id: Mapped[int] = mapped_column(Integer)
-    country_id: Mapped[int] = mapped_column(Integer)
-    industry_id: Mapped[int] = mapped_column(Integer)
-    information: Mapped[str] = mapped_column(String)
-    last_spot_date: Mapped[Date] = mapped_column(Date)
-    last_update: Mapped[Date] = mapped_column(Date)
-
-    def __repr__(self):
-        return f"<StockView(stock_id={self.stock_id}, symbol='{self.symbol}')>"
-
-class LastSpot(Base):
-    __tablename__ = 'last_spot'
-
-    stock_id: Mapped[int] = mapped_column(primary_key=True)
-    symbol: Mapped[str] = mapped_column(String)
-    last_spot_date: Mapped[date] = mapped_column(Date)
-
-    def __repr__(self):
-        return f"<LastSpot(stock_id={self.stock_id}, symbol='{self.symbol}')>"
-
-

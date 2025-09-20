@@ -7,12 +7,12 @@ import curl_cffi
 
 from app.db_orm import Stock
 from .sqlspeaker import update_country, update_sector, update_currency, insert_stockspots, \
-    financial_insert_function, stock_list, update_industry, update_stock_object
+    financial_insert_function, update_industry, update_stock_object
 
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 import time
-from datetime import timedelta,date
+from datetime import date
 from typing import Optional
 import datetime
 
@@ -29,32 +29,7 @@ def get_info_basics(share: yf.Ticker) -> Optional[dict]:
     except:
         return None
 
-# get the sector of a stock
-def get_sector(share: yf.Ticker) -> Optional[str]:
-    try:
-        sector_name = share.info['sector']
-        return sector_name
 
-    except KeyError:
-        return "KeyError"
-
-# get the country of a stock
-def get_country(share: yf.Ticker) -> Optional[str]:
-    try:
-        country_name = share.info['country']
-        return country_name.title()
-
-    except KeyError:
-        return "KeyError"
-    except requests.exceptions.ChunkedEncodingError:
-        return "ChunkedEncodingError"
-# get the currency of finencial data of a stock
-def get_finencial_currency(share: yf.Ticker) -> Optional[str]:
-    try:
-        currency_name = share.info['financialCurrency']
-        return str(currency_name).upper()
-    except KeyError:
-        return "KeyError"
 
 # get the history of the stock
 def history(share: yf.ticker.Ticker,start_date: datetime.date,stock_id:int) -> Optional[DataFrame]:
@@ -73,15 +48,11 @@ def history(share: yf.ticker.Ticker,start_date: datetime.date,stock_id:int) -> O
         hist["stock_id"] = int(stock_id)
         return hist[["stock_id", "spot_date", "open_value", "close_value", "dividends", "stock_splits","volume", "high_value", "low_value"]]
 
-    except requests.exceptions.HTTPError:
+    except requests.exceptions.HTTPError | requests.exceptions.ConnectionError | pytz.exceptions.UnknownTimeZoneError:
 
         return None
 
-    except requests.exceptions.ConnectionError:
 
-        return None
-    except pytz.exceptions.UnknownTimeZoneError:
-        return None
 
 # get the yearly balance_sheet of a stock
 def get_annual_balancesheet(share: yf.ticker.Ticker) -> Optional[DataFrame]:
@@ -216,11 +187,6 @@ def info_generate(symbol_list: list[Stock]):
                 'sector_id': update_sector( inf.get('sector')),
                 'cur_id': update_currency( inf.get("financialCurrency"))
             }
-            
-            
-           
-        
-            
             update_stock_object(stock_id=stock_id, values=values)
 
             #annual Balancesheet
