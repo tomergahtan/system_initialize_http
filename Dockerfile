@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set default command to run your module entrypoint
-CMD ["uvicorn", "index:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "index.py"]

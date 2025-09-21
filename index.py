@@ -1,3 +1,4 @@
+
 from app.consumer import conn,QUEUE,ch
 from app.initializing_the_system import info_generate
 from app.sqlspeaker import Session, Stock

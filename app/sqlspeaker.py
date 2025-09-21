@@ -42,7 +42,7 @@ with Session() as session:
         sector_set = { sector.sector_name:sector.sector_id for sector in session.query(Sector).all()}
         currency_set = { currency.cur_name:currency.cur_id for currency in session.query(Currency).all()}
         industry_set = { industry.industry_name:industry.industry_id for industry in session.query(Industry).all()}
-
+      
     except DBAPIError as e:
         print(f"Error: {e}")
     finally:

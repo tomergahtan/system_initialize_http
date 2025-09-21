@@ -3,14 +3,14 @@ import pika
 import os
 
 HOST = os.getenv('RABBITMQ_HOST')
-PORT = os.getenv('RABBITMQ_PORT')
+PORT = int(os.getenv('RABBITMQ_PORT',5671))
 USER = os.getenv('RABBITMQ_USER')
 PASS = os.getenv('RABBITMQ_PASS')
 QUEUE = os.getenv('RABBITMQ_QUEUE')
 
 # TLS context for self-signed certs
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-ctx.load_verify_locations("app/ca.crt")
+ctx.load_verify_locations("ca.crt")
 ctx.check_hostname = False   # skip hostname check for self-signed
 
 params = pika.ConnectionParameters(
