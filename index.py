@@ -11,7 +11,7 @@ def get_stock_by_id(stock_id: int) -> Optional[Stock]:
             stock = session.query(Stock).filter(Stock.stock_id == stock_id).first()
             return stock
         except Exception as e:
-            print(f"Error getting stock by id: {e}")
+            print(f"Error getting stock by id: {e}",flush=True)
             return None
         finally:
             session.close()
@@ -26,10 +26,10 @@ def callback(ch, method, properties, body):
             info_generate([stock])
             print(" [x] Stock initialized:", stock.stock_id)
         else:
-            print(" [x] Stock not found:", data["stock_id"])
+            print(" [x] Stock not found:", data["stock_id"],flush=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
-        print(" [!] Bad message:", body, e)
+        print(" [!] Bad message:", body, e,flush=True)
     # Acknowledge
 
 

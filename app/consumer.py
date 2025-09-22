@@ -3,10 +3,10 @@ import pika
 import os
 
 HOST = os.getenv('RABBITMQ_HOST')
-PORT = int(os.getenv('RABBITMQ_PORT',5671))
+PORT = 5671
 USER = os.getenv('RABBITMQ_USER')
 PASS = os.getenv('RABBITMQ_PASS')
-QUEUE = os.getenv('RABBITMQ_QUEUE')
+QUEUE = "stock_reset_q"
 
 # TLS context for self-signed certs
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
