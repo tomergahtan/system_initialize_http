@@ -12,7 +12,7 @@ from .sqlspeaker import update_country, update_sector, update_currency, insert_s
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 import time
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 import datetime
 
@@ -37,7 +37,7 @@ def history(share: yf.ticker.Ticker,start_date: datetime.date,stock_id:int) -> O
     try:
 
 
-        hist = share.history(start=start_date, end=datetime.datetime.now().date(), interval='1d')
+        hist = share.history(start=start_date, end=datetime.datetime.now().date()+timedelta(days=1), interval='1d')
         if hist.empty:
             return None
 
