@@ -40,3 +40,4 @@ ENV/
 .envrc
 .vscode
 cronjob.yaml
+try.py

@@ -5,7 +5,7 @@ from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement,
                          QuarterlyCashFlow, Irrelevant, Integer, Date, Float,
-                        Industry)
+                        Industry, StockExchange)
 from datetime import datetime
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
@@ -42,12 +42,29 @@ with Session() as session:
         sector_set = { sector.sector_name:sector.sector_id for sector in session.query(Sector).all()}
         currency_set = { currency.cur_name:currency.cur_id for currency in session.query(Currency).all()}
         industry_set = { industry.industry_name:industry.industry_id for industry in session.query(Industry).all()}
+        stock_exchange_set = { stock_exchange.se_name:stock_exchange.se_id for stock_exchange in session.query(StockExchange).all()}
       
     except DBAPIError as e:
         print(f"Error: {e}")
     finally:
         session.close()
 
+
+
+def update_stock_exchange(stock_exchange_name: str):
+    if not stock_exchange_name in stock_exchange_set and stock_exchange_name is not None:
+        with Session() as session:
+            try:
+                stock_exchange = StockExchange(se_name=stock_exchange_name)
+                session.add(stock_exchange)
+                session.commit()
+                stock_exchange_set[stock_exchange_name] = stock_exchange.se_id
+            except Exception as e:
+                print(f"Error during stock exchange insertion {stock_exchange_name}: {e}",flush=True)
+                session.rollback()
+            finally:
+                session.close()
+    return stock_exchange_set.get(stock_exchange_name)
 
 def update_country(country_name: str):
         # Attempt to insert the country (trigger prevents duplicates)

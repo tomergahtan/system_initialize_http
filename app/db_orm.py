@@ -9,8 +9,8 @@ class Base(DeclarativeBase):
 class StockExchange(Base):
     __tablename__ = 'stock_exchange'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    se_id: Mapped[int] = mapped_column(primary_key=True)
+    se_name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
 
     # stocks: Mapped[list["Stock"]] = relationship("Stock", back_populates="stock_exchange")
 

@@ -13,3 +13,4 @@ psql.txt
 .envrc
 *.pyc
 .venv/
+try.py

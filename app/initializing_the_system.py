@@ -7,7 +7,7 @@ import curl_cffi
 
 from app.db_orm import Stock
 from .sqlspeaker import update_country, update_sector, update_currency, insert_stockspots, \
-    financial_insert_function, update_industry, update_stock_object
+    financial_insert_function, update_industry, update_stock_object, update_stock_exchange
 
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
@@ -185,7 +185,8 @@ def info_generate(symbol_list: list[Stock]):
                 'country_id': update_country( inf.get('country')),
                 'industry_id': update_industry( inf.get('industry')),
                 'sector_id': update_sector( inf.get('sector')),
-                'cur_id': update_currency( inf.get("financialCurrency"))
+                'cur_id': update_currency( inf.get("financialCurrency")),
+                'se_id': update_stock_exchange( inf.get("fullExchangeName"))
             }
             update_stock_object(stock_id=stock_id, values=values)
 
