@@ -1,5 +1,5 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, aliased
-from sqlalchemy import Integer, String, Float, ForeignKey, Date, BigInteger
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import  String, Float, ForeignKey, Date, BigInteger
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 from datetime import date
@@ -90,15 +90,18 @@ class Irrelevant(Base):
 
 # StockSpot table
 class StockSpot(Base):
-    __tablename__ = 'stock_spots'
+    __tablename__ = "stock_spots"
 
-    stock_id: Mapped[int] = mapped_column(ForeignKey('stocks.stock_id'), primary_key=True)
-    spot_date: Mapped[date] = mapped_column(primary_key=True)
-    open_value: Mapped[float] = mapped_column()
-    close_value: Mapped[float] = mapped_column()
-    high_value: Mapped[float] = mapped_column()
-    low_value: Mapped[float] = mapped_column()
-    volume: Mapped[float] = mapped_column()
+    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.stock_id"), primary_key=True)
+    spot_date: Mapped[date] = mapped_column(Date, primary_key=True)
+
+    # Float(53) maps to DOUBLE PRECISION on Postgres
+    open_value: Mapped[float]  = mapped_column(Float(53))
+    close_value: Mapped[float] = mapped_column(Float(53))
+    high_value: Mapped[float]  = mapped_column(Float(53))
+    low_value: Mapped[float]   = mapped_column(Float(53))
+
+    volume: Mapped[int] = mapped_column(BigInteger)
 
     def __repr__(self):
         return f"<StockSpot(stock_id={self.stock_id}, spot_date={self.spot_date})>"

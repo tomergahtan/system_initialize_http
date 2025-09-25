@@ -4,7 +4,7 @@ from sqlalchemy import select, create_engine,update,  text
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement,
-                         QuarterlyCashFlow, Irrelevant, Integer, Date, Float,
+                         QuarterlyCashFlow, Irrelevant,
                         Industry, StockExchange)
 from datetime import datetime
 import pandas as pd
@@ -26,13 +26,7 @@ TABLE_MODLE_MAP = {
     "annual_cash_flow": AnnualCashFlow,
     "quarterly_cash_flow": QuarterlyCashFlow,
 }
-data_types_stock_spots = {
-        "stock_id": Integer,
-        "spot_date": Date,
-        "open_value": Float,
-        "close_value": Float,
-        "volume":Float
-    }
+
 
 # connect to the database investments
 with Session() as session:
@@ -240,21 +234,21 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
             close_value DOUBLE PRECISION,
             high_value  DOUBLE PRECISION,
             low_value   DOUBLE PRECISION,
-            volume      DOUBLE PRECISION
+            volume      BIGINT
             ) ON COMMIT DROP;
             """)
             conn.exec_driver_sql("""
             CREATE TEMP TABLE tmp_divs (
             stock_id BIGINT NOT NULL,
             div_date DATE   NOT NULL,
-            amount   DOUBLE PRECISION
+            amount   NUMERIC(20,8)
             ) ON COMMIT DROP;
             """)
             conn.exec_driver_sql("""
             CREATE TEMP TABLE tmp_splt (
             stock_id  BIGINT NOT NULL,
             split_date DATE  NOT NULL,
-            ratio     DOUBLE PRECISION
+            ratio     NUMERIC(20,8)
             ) ON COMMIT DROP;
             """)
 

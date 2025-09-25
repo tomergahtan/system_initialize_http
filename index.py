@@ -42,7 +42,7 @@ ch.basic_qos(prefetch_count=10)
 ch.basic_consume(queue=QUEUE, on_message_callback=callback)
 
 
-
+print("version 1.0.1")
 print(f" [*] Waiting for messages on queue '{QUEUE}'… CTRL+C to exit.")
 try:
     ch.start_consuming()
