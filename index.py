@@ -20,8 +20,9 @@ def callback(ch, method, properties, body):
     try:
         data = json.loads(body.decode())
         
-        
+        print(data,flush=True)
         stock = get_stock_by_id(data["stock_id"])
+        print (f"stock: {stock.symbol}",flush=True)
         if stock is not None:
             info_generate([stock])
             print(" [x] Stock initialized:", stock.stock_id)
@@ -29,6 +30,7 @@ def callback(ch, method, properties, body):
             print(" [x] Stock not found:", data["stock_id"],flush=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
+        
         print(" [!] Bad message:", body, e,flush=True)
     # Acknowledge
 
@@ -36,17 +38,19 @@ def callback(ch, method, properties, body):
 
 
 # Ensure QoS so we don’t flood this consumer
-ch.basic_qos(prefetch_count=10)
+ch.basic_qos(prefetch_count=1)
 
 # Attach to the existing queue
 ch.basic_consume(queue=QUEUE, on_message_callback=callback)
 
 
 print("version 1.0.1")
-print(f" [*] Waiting for messages on queue '{QUEUE}'… CTRL+C to exit.")
+print(f" [*] Waiting for messages on queue '{QUEUE}'… CTRL+C to exit.", flush=True)
 try:
     ch.start_consuming()
 except KeyboardInterrupt:
     print("Stopping consumer…")
-    conn.close()
-
+    try: ch.stop_consuming()
+    except: pass
+    try: conn.close()
+    except: pass
