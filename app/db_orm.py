@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import  String, Float, ForeignKey, Date, BigInteger
+from sqlalchemy import  String, Float, ForeignKey, Date, BigInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 from datetime import date
@@ -73,6 +73,8 @@ class Stock(Base):
     country_id: Mapped[int] = mapped_column(ForeignKey('country.country_id'))
     industry_id: Mapped[int] = mapped_column(ForeignKey('industry.industry_id'))
     last_update: Mapped[Date] = mapped_column(Date, nullable=True)
+    company_name: Mapped[str] = mapped_column(Text, nullable=True)
+    information: Mapped[str] = mapped_column(Text, nullable=True)
 
 
     def __repr__(self):

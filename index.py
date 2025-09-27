@@ -22,8 +22,8 @@ def callback(ch, method, properties, body):
         
         print(data,flush=True)
         stock = get_stock_by_id(data["stock_id"])
-        print (f"stock: {stock.symbol}",flush=True)
         if stock is not None:
+            print (f"stock: {stock.symbol}",flush=True)
             info_generate([stock])
             print(" [x] Stock initialized:", stock.stock_id)
         else:

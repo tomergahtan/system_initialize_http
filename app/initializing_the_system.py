@@ -37,7 +37,7 @@ def history(share: yf.ticker.Ticker,start_date: datetime.date,stock_id:int) -> O
     try:
 
 
-        hist = share.history(start=start_date, end=datetime.datetime.now().date()+timedelta(days=1), interval='1d')
+        hist = share.history(start=start_date, end=datetime.datetime.now().date(), interval='1d')
         if hist.empty:
             return None
 
@@ -186,7 +186,9 @@ def info_generate(symbol_list: list[Stock]):
                 'industry_id': update_industry( inf.get('industry')),
                 'sector_id': update_sector( inf.get('sector')),
                 'cur_id': update_currency( inf.get("financialCurrency")),
-                'se_id': update_stock_exchange( inf.get("fullExchangeName"))
+                'se_id': update_stock_exchange( inf.get("fullExchangeName")),
+                'company_name': inf.get('longName'),
+                'information': inf.get('longBusinessSummary')
             }
             update_stock_object(stock_id=stock_id, values=values)
 
