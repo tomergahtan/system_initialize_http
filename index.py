@@ -30,8 +30,11 @@ def callback(ch, method, properties, body):
             print(" [x] Stock not found:", data["stock_id"],flush=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
-        
+        # put the same message back to the head of the queue
+
         print(" [!] Bad message:", body, e,flush=True)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
     # Acknowledge
 
 

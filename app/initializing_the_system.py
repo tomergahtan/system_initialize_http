@@ -23,12 +23,6 @@ import datetime
 
 
 
-def get_info_basics(share: yf.Ticker) -> Optional[dict]:
-    try:
-        return share.info
-    except:
-        return None
-
 
 
 # get the history of the stock
