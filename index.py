@@ -22,18 +22,22 @@ def callback(ch, method, properties, body):
         
         print(data,flush=True)
         stock = get_stock_by_id(data["stock_id"])
-        if stock is not None:
+        if isinstance(stock, Stock):
             print (f"stock: {stock.symbol}",flush=True)
-            info_generate([stock])
+            result = info_generate([stock])
+            if result == "success":
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            else:
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
             print(" [x] Stock initialized:", stock.stock_id)
         else:
             print(" [x] Stock not found:", data["stock_id"],flush=True)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
     except Exception as e:
         # put the same message back to the head of the queue
 
         print(" [!] Bad message:", body, e,flush=True)
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
     # Acknowledge
 

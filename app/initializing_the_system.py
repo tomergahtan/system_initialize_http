@@ -235,6 +235,7 @@ def info_generate(symbol_list: list[Stock]):
             print(f'all done for ticker {stock_symbol}',flush=True)
             index += 1
             trial = 0
+            return "success"
 
 
         except (YFRateLimitError, requests.exceptions.Timeout, curl_cffi.requests.exceptions.Timeout) as e:
@@ -246,6 +247,8 @@ def info_generate(symbol_list: list[Stock]):
             else:
                 trial = 0
                 index += 1
+                return "nack"
+
 
 
         # except Exception as e:
