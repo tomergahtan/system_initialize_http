@@ -1,9 +1,12 @@
-
-from app.consumer import conn,QUEUE,ch
+from app.consumer import connect,QUEUE,HOST
 from app.initializing_the_system import info_generate
 from app.sqlspeaker import Session, Stock
 from typing import Optional
 import json
+import pika
+import time
+import traceback
+
 
 def get_stock_by_id(stock_id: int) -> Optional[Stock]:
     with Session() as session:
@@ -43,21 +46,28 @@ def callback(ch, method, properties, body):
 
 
 
+def start_consumer():
+    
+    while True:
+        try:
+            conn = connect()
+            ch = conn.channel()
+            ch.basic_qos(prefetch_count=1)
+            ch.basic_consume(queue=QUEUE, on_message_callback=callback)
 
-# Ensure QoS so we don’t flood this consumer
-ch.basic_qos(prefetch_count=1)
+            print("version 1.0.2")
+            print(f" [*] Connected to RabbitMQ at {HOST}, waiting for messages on '{QUEUE}'…", flush=True)
+            ch.start_consuming()
 
-# Attach to the existing queue
-ch.basic_consume(queue=QUEUE, on_message_callback=callback)
+        except pika.exceptions.AMQPError as e:
+            print("Connection lost or broker unavailable. Retrying in 5s…", e, flush=True)
+            time.sleep(5)
+            continue
+        except Exception as e:
+            print("Unexpected error in consumer:", e, flush=True)
+            traceback.print_exc()
+            time.sleep(5)
+            continue
 
-
-print("version 1.0.1")
-print(f" [*] Waiting for messages on queue '{QUEUE}'… CTRL+C to exit.", flush=True)
-try:
-    ch.start_consuming()
-except KeyboardInterrupt:
-    print("Stopping consumer…")
-    try: ch.stop_consuming()
-    except: pass
-    try: conn.close()
-    except: pass
+if __name__ == "__main__":
+    start_consumer()
