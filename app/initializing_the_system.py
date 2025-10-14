@@ -175,7 +175,7 @@ def info_generate(symbol_list: list[Stock]):
                 insert_stockspots(hist_all=hist, stock_id=stock_id)
            
             values = {
-                'shares_issued': inf.get('impliedSharesOutstanding'),
+                'implied_shares_outstanding': inf.get('impliedSharesOutstanding'),
                 'country_id': update_country( inf.get('country')),
                 'industry_id': update_industry( inf.get('industry')),
                 'sector_id': update_sector( inf.get('sector')),
