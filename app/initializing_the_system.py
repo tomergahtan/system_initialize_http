@@ -174,17 +174,7 @@ def info_generate(symbol_list: list[Stock]):
 
                 insert_stockspots(hist_all=hist, stock_id=stock_id)
            
-            values = {
-                'implied_shares_outstanding': inf.get('impliedSharesOutstanding'),
-                'country_id': update_country( inf.get('country')),
-                'industry_id': update_industry( inf.get('industry')),
-                'sector_id': update_sector( inf.get('sector')),
-                'cur_id': update_currency( inf.get("financialCurrency")),
-                'se_id': update_stock_exchange( inf.get("fullExchangeName")),
-                'company_name': inf.get('longName'),
-                'information': inf.get('longBusinessSummary')
-            }
-            update_stock_object(stock_id=stock_id, values=values)
+            
 
             #annual Balancesheet
             ann_bs = get_annual_balancesheet(share=stock_data)
@@ -231,7 +221,19 @@ def info_generate(symbol_list: list[Stock]):
                 financial_insert_function(df=quarter_cf, table_name="quarterly_cash_flow",stock_id=stock_id)
             else:
                 pass
-
+            # update the stock object
+            values = {
+                'implied_shares_outstanding': inf.get('impliedSharesOutstanding'),
+                'country_id': update_country( inf.get('country')),
+                'industry_id': update_industry( inf.get('industry')),
+                'sector_id': update_sector( inf.get('sector')),
+                'cur_id': update_currency( inf.get("financialCurrency")),
+                'se_id': update_stock_exchange( inf.get("fullExchangeName")),
+                'company_name': inf.get('longName'),
+                'information': inf.get('longBusinessSummary'),
+                'last_reset': datetime.now().date()
+            }
+            update_stock_object(stock_id=stock_id, values=values)
             print(f'all done for ticker {stock_symbol}',flush=True)
             index += 1
             trial = 0

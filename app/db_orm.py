@@ -75,6 +75,7 @@ class Stock(Base):
     last_update: Mapped[Date] = mapped_column(Date, nullable=True)
     company_name: Mapped[str] = mapped_column(Text, nullable=True)
     information: Mapped[str] = mapped_column(Text, nullable=True)
+    last_reset: Mapped[Date] = mapped_column(Date, nullable=True)
 
 
     def __repr__(self):
