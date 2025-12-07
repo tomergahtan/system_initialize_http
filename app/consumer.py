@@ -10,9 +10,14 @@ QUEUE = "stock_reset_q"
 WORKERS = int(os.getenv("WORKERS", "2"))
 
 # TLS context for self-signed certs
-ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-ctx.load_verify_locations("ca.crt")
-ctx.check_hostname = False   # skip hostname check for self-signed
+# ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+# ctx.load_verify_locations("ca.crt")
+# ctx.check_hostname = False   # skip hostname check for self-signed
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
 
 def connect():
     params = pika.ConnectionParameters(

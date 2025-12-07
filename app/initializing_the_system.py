@@ -231,7 +231,7 @@ def info_generate(symbol_list: list[Stock]):
                 'se_id': update_stock_exchange( inf.get("fullExchangeName")),
                 'company_name': inf.get('longName'),
                 'information': inf.get('longBusinessSummary'),
-                'last_reset': datetime.now().date()
+                'last_reset': datetime.datetime.now().date()
             }
             update_stock_object(stock_id=stock_id, values=values)
             print(f'all done for ticker {stock_symbol}',flush=True)
