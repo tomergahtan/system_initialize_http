@@ -31,16 +31,16 @@ def callback(ch, method, properties, body):
             if result == "success":
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             else:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             print(" [x] Stock initialized:", stock.stock_id)
         else:
             print(" [x] Stock not found:", data["stock_id"],flush=True)
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
     except Exception as e:
         # put the same message back to the head of the queue
 
         print(" [!] Bad message:", body, e,flush=True)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     # Acknowledge
 

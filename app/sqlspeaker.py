@@ -31,12 +31,13 @@ TABLE_MODLE_MAP = {
 # connect to the database investments
 with Session() as session:
     try:
-
+        se = session.query(StockExchange).all()
         country_set = { country.country_name: country.country_id for country in session.query(Country).all()}
         sector_set = { sector.sector_name:sector.sector_id for sector in session.query(Sector).all()}
         currency_set = { currency.cur_name:currency.cur_id for currency in session.query(Currency).all()}
         industry_set = { industry.industry_name:industry.industry_id for industry in session.query(Industry).all()}
-        stock_exchange_set = { stock_exchange.se_name:stock_exchange.se_id for stock_exchange in session.query(StockExchange).all()}
+        stock_exchange_set = { stock_exchange.se_name:stock_exchange.se_id for stock_exchange in se}
+        se_currency_set = { stock_exchange.se_name:stock_exchange.currency_id for stock_exchange in se}
       
     except DBAPIError as e:
         print(f"Error: {e}")
@@ -45,16 +46,30 @@ with Session() as session:
 
 
 
-def update_stock_exchange(stock_exchange_name: str):
+def update_stock_exchange(stock_exchange_name: str,currency:str):
+
+    currency_id = update_currency(currency)
     if not stock_exchange_name in stock_exchange_set and stock_exchange_name is not None:
         with Session() as session:
             try:
-                stock_exchange = StockExchange(se_name=stock_exchange_name)
+                stock_exchange = StockExchange(se_name=stock_exchange_name,currency_id=currency_id)
                 session.add(stock_exchange)
                 session.commit()
                 stock_exchange_set[stock_exchange_name] = stock_exchange.se_id
+                se_currency_set[stock_exchange_name] = currency_id
             except Exception as e:
                 print(f"Error during stock exchange insertion {stock_exchange_name}: {e}",flush=True)
+                session.rollback()
+            finally:
+                session.close()
+    elif currency_id != se_currency_set.get(stock_exchange_name):
+        with Session() as session:
+            try:
+                session.execute(update(StockExchange).where(StockExchange.se_name == stock_exchange_name).values(currency_id=currency_id))
+                session.commit()
+                se_currency_set[stock_exchange_name] = currency_id
+            except Exception as e:
+                print(f"Error during stock exchange currency update {stock_exchange_name}: {e}",flush=True)
                 session.rollback()
             finally:
                 session.close()

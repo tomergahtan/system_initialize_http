@@ -180,47 +180,40 @@ def info_generate(symbol_list: list[Stock]):
             ann_bs = get_annual_balancesheet(share=stock_data)
 
             if isinstance(ann_bs, DataFrame):
-
                 financial_insert_function(df=ann_bs, table_name="annual_balance_sheet",stock_id=stock_id)
-            else:
-                pass
+
 
             # Quarterly Balancesheet
             quarter_bs = get_quarterly_balancesheet(share=stock_data)
             if isinstance(quarter_bs, DataFrame):
                 financial_insert_function(df=quarter_bs, table_name="quarterly_balance_sheet",stock_id=stock_id)
-            else:
-                pass
+
 
             # Annual Income Statement
             ann_is = get_annual_income_statement(share=stock_data)
 
             if isinstance(ann_is, DataFrame):
                 financial_insert_function(df=ann_is, table_name="annual_income_statement",stock_id=stock_id)
-            else:
-                pass
+   
 
             # Quarterly Income Statement
             quarter_is = get_quarterly_income_statement(share=stock_data)
 
             if isinstance(quarter_is, DataFrame):
                 financial_insert_function(df=quarter_is, table_name="quarterly_income_statement",stock_id=stock_id)
-            else:
-                pass
+       
 
             # Annual Cashflow
             ann_cf = get_annual_cashflow(share=stock_data)
             if isinstance(ann_cf, DataFrame):
                 financial_insert_function(df=ann_cf, table_name="annual_cash_flow",stock_id=stock_id)
-            else:
-                pass
+            
 
             # Quarterly Cashflow
             quarter_cf = get_quarterly_cashflow(share=stock_data)
             if isinstance(quarter_cf, DataFrame):
                 financial_insert_function(df=quarter_cf, table_name="quarterly_cash_flow",stock_id=stock_id)
-            else:
-                pass
+
             # update the stock object
             values = {
                 'implied_shares_outstanding': inf.get('impliedSharesOutstanding'),
@@ -228,7 +221,7 @@ def info_generate(symbol_list: list[Stock]):
                 'industry_id': update_industry( inf.get('industry')),
                 'sector_id': update_sector( inf.get('sector')),
                 'cur_id': update_currency( inf.get("financialCurrency")),
-                'se_id': update_stock_exchange( inf.get("fullExchangeName")),
+                'se_id': update_stock_exchange( inf.get("fullExchangeName"),inf.get("currency")),
                 'company_name': inf.get('longName'),
                 'information': inf.get('longBusinessSummary'),
                 'last_reset': datetime.datetime.now().date()

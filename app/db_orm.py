@@ -11,11 +11,12 @@ class StockExchange(Base):
 
     se_id: Mapped[int] = mapped_column(primary_key=True)
     se_name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    currency_id: Mapped[int] = mapped_column(ForeignKey('currency.cur_id'),nullable=True)
 
     # stocks: Mapped[list["Stock"]] = relationship("Stock", back_populates="stock_exchange")
 
     def __repr__(self):
-        return f"<StockExchange(id={self.id}, name='{self.name}')>"
+        return f"<StockExchange(id={self.se_id}, name='{self.se_name}')>"
 
 # Currency table
 class Currency(Base):
