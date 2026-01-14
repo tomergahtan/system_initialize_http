@@ -49,7 +49,7 @@ with Session() as session:
 def update_stock_exchange(stock_exchange_name: str,currency:str):
 
     currency_id = update_currency(currency)
-    if not stock_exchange_name in stock_exchange_set and stock_exchange_name is not None:
+    if not stock_exchange_name in stock_exchange_set and stock_exchange_name:
         with Session() as session:
             try:
                 stock_exchange = StockExchange(se_name=stock_exchange_name,currency_id=currency_id)
@@ -77,7 +77,7 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
 
 def update_country(country_name: str):
         # Attempt to insert the country (trigger prevents duplicates)
-    if not country_name in country_set and country_name is not None :
+    if not country_name in country_set and country_name:
         with Session() as session:
             try:
                 country = Country(country_name=country_name)
@@ -100,7 +100,7 @@ def update_currency(cur: str):
     and not the currency of the stock itself.
     """
         # Attempt to insert the currency (trigger prevents duplicates)
-    if not cur in currency_set and cur is not None:
+    if not cur in currency_set and cur:
         with Session() as session:
             try:
                 currency = Currency(cur_name=cur)
@@ -120,7 +120,7 @@ def update_sector(sector_name:str):
     Update the sector of a stock in the database.
     """
         # Attempt to insert the sector (trigger prevents duplicates)
-    if not sector_name in sector_set and sector_name is not None:
+    if not sector_name in sector_set and sector_name:
         with Session() as session:
             try:
                 sector = Sector(sector_name=sector_name)
@@ -142,7 +142,7 @@ def update_industry(industry_name:str):
 
 
         # Attempt to insert the industry (trigger prevents duplicates)
-    if not industry_name in industry_set and industry_name is not None:
+    if not industry_name in industry_set and industry_name:
         with Session() as session:
             try:
                 industry = Industry(industry_name=industry_name)
@@ -158,7 +158,7 @@ def update_industry(industry_name:str):
 
 def update_stock_object(stock_id: int, values: dict):
     values['last_update'] = datetime.now().date()
-    values = {k: v for k, v in values.items() if v is not None}
+    values = {k: v for k, v in values.items() if v}
     with Session() as session:
         try:
             session.execute(update(Stock).where(Stock.stock_id == stock_id).values(**values))   
