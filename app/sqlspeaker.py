@@ -1,6 +1,7 @@
 import os
 import io
 from sqlalchemy import select, create_engine,update,  text
+from sqlalchemy.dialects.postgresql import insert
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement,
@@ -308,51 +309,54 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
     
 # a function that gets
 
-def financial_insert_function(df: pd.DataFrame, stock_id: int,table_name:str):
+def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
+    success = True
     with Session() as session:
         try:
-
             Model = TABLE_MODLE_MAP[table_name]
-            # Ensure the DataFrame's index is named 'publish_date' and reset it to a column
+            
+            # 1. Clean and Prepare DataFrame
             if df.index.name != 'publish_date':
-                df = df.reset_index().rename(columns={'index': 'publish_date'})
+                df = df.reset_index().rename(columns={df.index.name if df.index.name else 'index': 'publish_date'})
             else:
                 df = df.reset_index()
 
-            # Convert 'publish_date' to datetime.date
             df['publish_date'] = pd.to_datetime(df['publish_date']).dt.date
 
-            # Query existing records for the given stock_id
-            existing_dates = session.scalars(
-                select(Model.publish_date).
-                where(Model.stock_id == stock_id)
-            ).all()
-
-            # Filter out rows that already exist in the database
-            new_records = df[~df['publish_date'].isin(existing_dates)]
-
-            # Iterate over the new records and add them to the session
-            for _, row in new_records.iterrows():
-                # Create the data dictionary encapsulated under the 'data' key
+            # 2. Build the records list
+            records = []
+            for _, row in df.iterrows():
+                # Drop publish_date from the JSON data blob to avoid redundancy
                 data_dict = row.drop(['publish_date']).dropna().to_dict()
-                record_data = {"data": data_dict}
+                records.append({
+                    "stock_id": stock_id,
+                    "publish_date": row['publish_date'],
+                    "data": data_dict
+                })
 
-                # Create an instance of the ORM model
-                record = Model(
-                    stock_id=stock_id,
-                    publish_date=row['publish_date'],
-                    data=data_dict
-                )
+            if not records:
+                return True
 
-                # Add the record to the session
-                session.add(record)
+            # 3. Perform PostgreSQL Upsert
+            stmt = insert(Model).values(records)
+            
+            # Define the update action on conflict
+            upsert_stmt = stmt.on_conflict_do_update(
+            # Instead of 'constraint="name"', use the column objects or names
+            index_elements=[Model.stock_id, Model.publish_date], 
+            set_={"data": stmt.excluded.data}
+            )
 
-            # Commit the session to insert all new records
+            session.execute(upsert_stmt)
             session.commit()
-
+            
+            
 
         except Exception as e:
             session.rollback()
-            print(f"Error during insertion:{stock_id} {e}","\n")
+            print(f"Error during insertion for stock {stock_id}: {e}")
+            success = False
         finally:
             session.close()
+    return success
+    
