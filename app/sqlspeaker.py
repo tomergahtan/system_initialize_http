@@ -48,6 +48,8 @@ with Session() as session:
 
 
 def update_stock_exchange(stock_exchange_name: str,currency:str):
+    if not stock_exchange_name:
+        return None
 
     currency_id = update_currency(currency)
     if not stock_exchange_name in stock_exchange_set and stock_exchange_name:
@@ -77,6 +79,8 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
     return stock_exchange_set.get(stock_exchange_name)
 
 def update_country(country_name: str):
+    if not country_name:
+        return None
         # Attempt to insert the country (trigger prevents duplicates)
     if not country_name in country_set and country_name:
         with Session() as session:
@@ -95,6 +99,8 @@ def update_country(country_name: str):
 
 # insert stocks
 def update_currency(cur: str):
+    if not cur:
+        return None
     """
     Update the currency of a stock in the database.
     Note: this Currency  is the currency of the finencial data of the stock
@@ -120,6 +126,8 @@ def update_sector(sector_name:str):
     """
     Update the sector of a stock in the database.
     """
+    if not sector_name:
+        return None
         # Attempt to insert the sector (trigger prevents duplicates)
     if not sector_name in sector_set and sector_name:
         with Session() as session:
@@ -140,7 +148,8 @@ def update_industry(industry_name:str):
     """
     Update the industry of a stock in the database.
     """
-
+    if not industry_name:
+        return None
 
         # Attempt to insert the industry (trigger prevents duplicates)
     if not industry_name in industry_set and industry_name:
@@ -158,8 +167,9 @@ def update_industry(industry_name:str):
     return industry_set.get(industry_name)
 
 def update_stock_object(stock_id: int, values: dict):
+    
     values['last_update'] = datetime.now().date()
-    values = {k: v for k, v in values.items() if v}
+    values = {k: v if v else None for k, v in values.items()}
     with Session() as session:
         try:
             session.execute(update(Stock).where(Stock.stock_id == stock_id).values(**values))   
