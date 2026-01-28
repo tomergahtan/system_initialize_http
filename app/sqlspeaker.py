@@ -65,7 +65,7 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
                 session.rollback()
             finally:
                 session.close()
-    elif currency_id != se_currency_set.get(stock_exchange_name):
+    elif currency_id and currency_id != se_currency_set.get(stock_exchange_name):
         with Session() as session:
             try:
                 session.execute(update(StockExchange).where(StockExchange.se_name == stock_exchange_name).values(currency_id=currency_id))
