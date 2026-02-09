@@ -338,11 +338,13 @@ def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
             for _, row in df.iterrows():
                 # Drop publish_date from the JSON data blob to avoid redundancy
                 data_dict = row.drop(['publish_date']).dropna().to_dict()
-                records.append({
-                    "stock_id": stock_id,
-                    "publish_date": row['publish_date'],
-                    "data": data_dict
-                })
+                if len(data_dict) > 4:
+                    records.append({
+                        "stock_id": stock_id,
+                        "publish_date": row['publish_date'],
+                        "data": data_dict
+                    })
+
 
             if not records:
                 return True
