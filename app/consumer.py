@@ -1,7 +1,7 @@
 import ssl
 import pika
 import os
-
+from app import logger
 HOST = os.getenv('RABBITMQ_HOST')
 PORT = int(os.getenv('RABBITMQ_PORT',5671))
 USER = os.getenv('RABBITMQ_USER')
@@ -20,6 +20,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 
 def connect():
+    logger.info(f"Connecting to RabbitMQ at {HOST}:{PORT}")
     params = pika.ConnectionParameters(
         host=HOST,
         port=PORT,
@@ -32,6 +33,8 @@ def connect():
         retry_delay=5,
         client_properties={"connection_name": "stock_reset_consumer"},
     )
-    return pika.BlockingConnection(params)
+    conn = pika.BlockingConnection(params)
+    logger.info(f"Connected to RabbitMQ at {HOST}:{PORT}")
+    return conn
 
 

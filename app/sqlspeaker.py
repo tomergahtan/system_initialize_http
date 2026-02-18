@@ -1,6 +1,7 @@
 import os
 import io
-from sqlalchemy import select, create_engine,update,  text
+from sqlalchemy import create_engine,update,  text
+from typing import Optional
 from sqlalchemy.dialects.postgresql import insert
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
@@ -12,7 +13,9 @@ import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 import logging
-logging.getLogger('yfinance').setLevel(logging.CRITICAL)
+yf_logger = logging.getLogger("yfinance")
+yf_logger.disabled = True
+
 
 psql =os.getenv('PSQL')
 
@@ -319,6 +322,20 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
     
 # a function that gets
 
+def get_stock_by_id(stock_id: int) -> Optional[Stock]:
+    with Session() as session:
+        try:    
+            stock = session.query(Stock).filter(Stock.stock_id == stock_id).first()
+            return stock
+        except Exception as e:
+            print(f"Error getting stock by id: {e}",flush=True)
+            return None
+        finally:
+            session.close()
+    
+
+
+
 def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
     success = True
     with Session() as session:
@@ -338,12 +355,12 @@ def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
             for _, row in df.iterrows():
                 # Drop publish_date from the JSON data blob to avoid redundancy
                 data_dict = row.drop(['publish_date']).dropna().to_dict()
-                if len(data_dict) > 4:
-                    records.append({
-                        "stock_id": stock_id,
-                        "publish_date": row['publish_date'],
-                        "data": data_dict
-                    })
+                
+                records.append({
+                    "stock_id": stock_id,
+                    "publish_date": row['publish_date'],
+                    "data": data_dict
+                })
 
 
             if not records:

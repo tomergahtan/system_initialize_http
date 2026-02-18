@@ -15,7 +15,7 @@ import time
 from datetime import date, timedelta
 from typing import Optional
 import datetime
-
+from app import logger
 
 # get market capacity
 
@@ -58,16 +58,11 @@ def get_annual_balancesheet(share: yf.ticker.Ticker) -> Optional[DataFrame]:
         return b_s
 
 
-    except requests.exceptions.HTTPError:
+    except:
+        logger.error(f"Error getting annual balance sheet for {share.symbol}")
 
         return None
 
-    except requests.exceptions.ConnectionError:
-
-        return None
-
-    except pytz.exceptions.UnknownTimeZoneError:
-        return None
 
 # get the quarterly balance_sheet of a stock
 def get_quarterly_balancesheet(share: yf.ticker.Ticker) -> Optional[DataFrame]:
@@ -120,20 +115,8 @@ def get_annual_income_statement(share: yf.ticker.Ticker) -> Optional[DataFrame]:
         return i_s
 
 
-    except requests.exceptions.HTTPError:
-
-        return None
-
-
-
-    except requests.exceptions.ConnectionError:
-
-        return None
-
-
-
-    except pytz.exceptions.UnknownTimeZoneError:
-
+    except:
+        logger.error(f"Error getting annual income statement for {share.symbol}")
         return None
 
 # get the quarterly income_statement of a stock
@@ -227,15 +210,15 @@ def info_generate(symbol_list: list[Stock]):
                 'last_reset': datetime.datetime.now().date()
             }
             update_stock_object(stock_id=stock_id, values=values)
-            print(f'all done for ticker {stock_symbol}',flush=True)
+            logger.info(f'all done for ticker {stock_symbol}')
             index += 1
             trial = 0
             return "success"
 
 
         except (YFRateLimitError, requests.exceptions.Timeout, curl_cffi.requests.exceptions.Timeout) as e:
-            print(f"Rate limit error with ticker {stock.symbol}: {e}",flush=True)
-            print("Pausing for 90 seconds before retrying...", flush=True)
+            logger.error(f"Rate limit error with ticker {stock.symbol}: {e}")
+            logger.info("Pausing for 90 seconds before retrying...")
             time.sleep(90)
             if trial < 3:
                 trial += 1
