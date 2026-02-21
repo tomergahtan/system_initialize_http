@@ -13,6 +13,9 @@ import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 import logging
+
+from app import logger
+
 yf_logger = logging.getLogger("yfinance")
 yf_logger.disabled = True
 
@@ -42,9 +45,12 @@ with Session() as session:
         industry_set = { industry.industry_name:industry.industry_id for industry in session.query(Industry).all()}
         stock_exchange_set = { stock_exchange.se_name:stock_exchange.se_id for stock_exchange in se}
         se_currency_set = { stock_exchange.se_name:stock_exchange.currency_id for stock_exchange in se}
-      
+        logger.info(
+            "Loaded lookup sets: %d exchanges, %d countries, %d sectors, %d currencies, %d industries",
+            len(stock_exchange_set), len(country_set), len(sector_set), len(currency_set), len(industry_set),
+        )
     except DBAPIError as e:
-        print(f"Error: {e}")
+        logger.error("Failed to load lookup sets from database: %s", e)
     finally:
         session.close()
 
@@ -52,6 +58,7 @@ with Session() as session:
 
 def update_stock_exchange(stock_exchange_name: str,currency:str):
     if not stock_exchange_name:
+        logger.debug("update_stock_exchange: skipping empty stock_exchange_name")
         return None
 
     currency_id = update_currency(currency)
@@ -63,8 +70,9 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
                 session.commit()
                 stock_exchange_set[stock_exchange_name] = stock_exchange.se_id
                 se_currency_set[stock_exchange_name] = currency_id
+                logger.info("Inserted stock exchange: %s (id=%s)", stock_exchange_name, stock_exchange.se_id)
             except Exception as e:
-                print(f"Error during stock exchange insertion {stock_exchange_name}: {e}",flush=True)
+                logger.error("Error during stock exchange insertion %s: %s", stock_exchange_name, e)
                 session.rollback()
             finally:
                 session.close()
@@ -74,8 +82,9 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
                 session.execute(update(StockExchange).where(StockExchange.se_name == stock_exchange_name).values(currency_id=currency_id))
                 session.commit()
                 se_currency_set[stock_exchange_name] = currency_id
+                logger.info("Updated stock exchange currency: %s -> currency_id=%s", stock_exchange_name, currency_id)
             except Exception as e:
-                print(f"Error during stock exchange currency update {stock_exchange_name}: {e}",flush=True)
+                logger.error("Error during stock exchange currency update %s: %s", stock_exchange_name, e)
                 session.rollback()
             finally:
                 session.close()
@@ -83,6 +92,7 @@ def update_stock_exchange(stock_exchange_name: str,currency:str):
 
 def update_country(country_name: str):
     if not country_name:
+        logger.debug("update_country: skipping empty country_name")
         return None
         # Attempt to insert the country (trigger prevents duplicates)
     if not country_name in country_set and country_name:
@@ -92,10 +102,10 @@ def update_country(country_name: str):
                 session.add(country)
                 session.commit()
                 country_set[country_name] = country.country_id
-
+                logger.info("Inserted country: %s (id=%s)", country_name, country.country_id)
             except Exception as e:
                 session.rollback()
-                print(f"Error during country insertion {country_name}: {e}",flush=True)
+                logger.error("Error during country insertion %s: %s", country_name, e)
             finally:
                 session.close()
     return country_set.get(country_name)
@@ -103,6 +113,7 @@ def update_country(country_name: str):
 # insert stocks
 def update_currency(cur: str):
     if not cur:
+        logger.debug("update_currency: skipping empty cur")
         return None
     """
     Update the currency of a stock in the database.
@@ -117,9 +128,9 @@ def update_currency(cur: str):
                 session.add(currency)
                 session.commit()
                 currency_set[cur] = currency.cur_id
-                # print(f"Added currency {cur}")
+                logger.info("Inserted currency: %s (id=%s)", cur, currency.cur_id)
             except Exception as e:
-                print(f"Error during currency insertion with stock {cur}: {e}",flush=True)
+                logger.error("Error during currency insertion %s: %s", cur, e)
                 session.rollback()
             finally:
                 session.close()
@@ -130,6 +141,7 @@ def update_sector(sector_name:str):
     Update the sector of a stock in the database.
     """
     if not sector_name:
+        logger.debug("update_sector: skipping empty sector_name")
         return None
         # Attempt to insert the sector (trigger prevents duplicates)
     if not sector_name in sector_set and sector_name:
@@ -139,9 +151,9 @@ def update_sector(sector_name:str):
                 session.add(sector)
                 session.commit()
                 sector_set[sector_name] = sector.sector_id
-                # print(f"Added sector {sector_name}")
+                logger.info("Inserted sector: %s (id=%s)", sector_name, sector.sector_id)
             except Exception as e:
-                print(f"Error during sector insertion {sector_name}: {e}",flush=True)
+                logger.error("Error during sector insertion %s: %s", sector_name, e)
                 session.rollback()
             finally:
                 session.close()
@@ -152,6 +164,7 @@ def update_industry(industry_name:str):
     Update the industry of a stock in the database.
     """
     if not industry_name:
+        logger.debug("update_industry: skipping empty industry_name")
         return None
 
         # Attempt to insert the industry (trigger prevents duplicates)
@@ -162,24 +175,25 @@ def update_industry(industry_name:str):
                 session.add(industry)
                 session.commit()
                 industry_set[industry_name] = industry.industry_id
+                logger.info("Inserted industry: %s (id=%s)", industry_name, industry.industry_id)
             except Exception as e:
-                print(f"Error during industry insertion {industry_name}: {e} ",flush=True)
+                logger.error("Error during industry insertion %s: %s", industry_name, e)
                 session.rollback()
             finally:
                 session.close()
     return industry_set.get(industry_name)
 
 def update_stock_object(stock_id: int, values: dict):
-    
     values['last_update'] = datetime.now().date()
     values = {k: v if v else None for k, v in values.items()}
     with Session() as session:
         try:
-            session.execute(update(Stock).where(Stock.stock_id == stock_id).values(**values))   
+            session.execute(update(Stock).where(Stock.stock_id == stock_id).values(**values))
             session.commit()
+            logger.debug("Updated stock object: stock_id=%s", stock_id)
         except Exception as e:
             session.rollback()
-            print(f"Error during stock object update for stock {stock_id}: {e}",flush=True)
+            logger.error("Error during stock object update for stock %s: %s", stock_id, e)
         finally:
             session.close()
             
@@ -189,9 +203,10 @@ def insert_into_irrelevant(stock_id:int):
             irrelevant = Irrelevant(stock_id=stock_id)
             session.add(irrelevant)
             session.commit()
+            logger.info("Inserted stock into irrelevant: stock_id=%s", stock_id)
         except Exception as e:
             session.rollback()
-
+            logger.error("Error during insert_into_irrelevant for stock_id %s: %s", stock_id, e)
         finally:
             session.close()
 # update the market capacity of a stock
@@ -199,6 +214,7 @@ def insert_into_irrelevant(stock_id:int):
 def _copy_df(raw_conn, df: pd.DataFrame, table: str, cols: list[str]) -> None:
     """COPY FROM STDIN ל־table (טבלת temp)."""
     if df.empty:
+        logger.debug("_copy_df: skipping empty df for table %s", table)
         return
     buf = io.StringIO()
     df.loc[:, cols].to_csv(buf, index=False, header=False, date_format="%Y-%m-%d", na_rep="\\N")
@@ -208,6 +224,7 @@ def _copy_df(raw_conn, df: pd.DataFrame, table: str, cols: list[str]) -> None:
         f"COPY {table} ({', '.join(cols)}) FROM STDIN WITH (FORMAT csv, NULL '\\N')",
         buf,
     )
+    logger.debug("_copy_df: copied %d rows to %s", len(df), table)
 
 def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
     """
@@ -224,6 +241,7 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
     # 1) סינון למניה המבוקשת ובניית DF-ים בלי iterrows (הכי מהיר)
     df = hist_all.loc[hist_all["stock_id"] == stock_id].copy()
     if df.empty:
+        logger.debug("insert_stockspots: no history for stock_id=%s, skipping", stock_id)
         return  # אין מה לעדכן
 
     spots = (
@@ -315,33 +333,35 @@ def insert_stockspots( hist_all: pd.DataFrame, stock_id: int) -> None:
                 SELECT stock_id, split_date, ratio
                 FROM tmp_splt;
                 """)
-            
+            logger.info(
+                "insert_stockspots: stock_id=%s refreshed — spots=%d, dividends=%d, splits=%d",
+                stock_id, len(spots), len(divs), len(splt),
+            )
         except Exception as e:
-           
-            print(f"Error during refresh_single_stock: {e}",flush=True)
+            logger.error("Error during insert_stockspots for stock_id=%s: %s", stock_id, e)
     
 # a function that gets
 
 def get_stock_by_id(stock_id: int) -> Optional[Stock]:
     with Session() as session:
-        try:    
+        try:
             stock = session.query(Stock).filter(Stock.stock_id == stock_id).first()
+            if stock is None:
+                logger.debug("get_stock_by_id: no stock found for stock_id=%s", stock_id)
             return stock
         except Exception as e:
-            print(f"Error getting stock by id: {e}",flush=True)
+            logger.error("Error getting stock by id %s: %s", stock_id, e)
             return None
         finally:
             session.close()
     
-
-
 
 def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
     success = True
     with Session() as session:
         try:
             Model = TABLE_MODLE_MAP[table_name]
-            
+
             # 1. Clean and Prepare DataFrame
             if df.index.name != 'publish_date':
                 df = df.reset_index().rename(columns={df.index.name if df.index.name else 'index': 'publish_date'})
@@ -355,35 +375,37 @@ def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
             for _, row in df.iterrows():
                 # Drop publish_date from the JSON data blob to avoid redundancy
                 data_dict = row.drop(['publish_date']).dropna().to_dict()
-                
+
                 records.append({
                     "stock_id": stock_id,
                     "publish_date": row['publish_date'],
                     "data": data_dict
                 })
 
-
             if not records:
+                logger.debug("financial_insert_function: no records for stock_id=%s table=%s", stock_id, table_name)
                 return True
 
             # 3. Perform PostgreSQL Upsert
             stmt = insert(Model).values(records)
-            
+
             # Define the update action on conflict
             upsert_stmt = stmt.on_conflict_do_update(
             # Instead of 'constraint="name"', use the column objects or names
-            index_elements=[Model.stock_id, Model.publish_date], 
+            index_elements=[Model.stock_id, Model.publish_date],
             set_={"data": stmt.excluded.data}
             )
 
             session.execute(upsert_stmt)
             session.commit()
-            
-            
+            logger.info(
+                "financial_insert_function: upserted %d records for stock_id=%s table=%s",
+                len(records), stock_id, table_name,
+            )
 
         except Exception as e:
             session.rollback()
-            print(f"Error during insertion for stock {stock_id}: {e}")
+            logger.error("Error during financial insertion for stock_id=%s table=%s: %s", stock_id, table_name, e)
             success = False
         finally:
             session.close()
