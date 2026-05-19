@@ -5,13 +5,19 @@ from sqlalchemy.ext.mutable import MutableDict
 from datetime import date
 class Base(DeclarativeBase):
     pass
-# StockExchange table
 class StockExchange(Base):
     __tablename__ = 'stock_exchange'
 
     se_id: Mapped[int] = mapped_column(primary_key=True)
     se_name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
-    currency_id: Mapped[int] = mapped_column(ForeignKey('currency.cur_id'),nullable=True)
+    currency_id: Mapped[int] = mapped_column(ForeignKey('currency.cur_id'))
+    open_hour: Mapped[str] = mapped_column(Text, nullable=False)
+    close_hour: Mapped[str] = mapped_column(Text, nullable=False)
+    timezone: Mapped[str] = mapped_column(Text, nullable=True)
+    open_hour_premarket: Mapped[str] = mapped_column(Text, nullable=True)
+    close_hour_premarket: Mapped[str] = mapped_column(Text, nullable=True)
+    open_hour_aftermarket: Mapped[str] = mapped_column(Text, nullable=True)
+    close_hour_aftermarket: Mapped[str] = mapped_column(Text, nullable=True)
 
     # stocks: Mapped[list["Stock"]] = relationship("Stock", back_populates="stock_exchange")
 

@@ -15,9 +15,63 @@ import time
 from datetime import date, timedelta
 from typing import Optional
 import datetime
+from zoneinfo import ZoneInfo
 from app import logger
 
 # get market capacity
+
+
+def extract_trading_hours(share: yf.Ticker) -> Optional[dict]:
+    """Pull pre/regular/post session start & end times from yfinance metadata
+    and return them as HH:MM strings in the exchange's local timezone, ready
+    to be written into the StockExchange table.
+    """
+    try:
+        md = share.get_history_metadata()
+    except Exception:
+        return None
+    if not md:
+        return None
+
+    tz_name = md.get("exchangeTimezoneName")
+    if not tz_name:
+        try:
+            tz_name = share.fast_info.timezone
+        except Exception:
+            tz_name = None
+    if not tz_name:
+        return None
+
+    try:
+        tz = ZoneInfo(tz_name)
+    except Exception:
+        return None
+
+    periods = md.get("currentTradingPeriod") or {}
+    regular = periods.get("regular") or {}
+    pre = periods.get("pre") or {}
+    post = periods.get("post") or {}
+
+    if not (regular.get("start") and regular.get("end")):
+        return None
+
+    def fmt(unix_ts: int) -> str:
+        return datetime.datetime.fromtimestamp(unix_ts, tz).strftime("%H:%M")
+
+    regular_open = fmt(regular["start"])
+    regular_close = fmt(regular["end"])
+
+    # Fall back to the regular session boundary when an exchange has no
+    # separate pre-/after-hours window so the NOT NULL columns stay valid.
+    return {
+        "timezone": tz_name,
+        "open_hour": regular_open,
+        "close_hour": regular_close,
+        "open_hour_premarket": fmt(pre["start"]) if pre.get("start") else regular_open,
+        "close_hour_premarket": fmt(pre["end"]) if pre.get("end") else regular_open,
+        "open_hour_aftermarket": fmt(post["start"]) if post.get("start") else regular_close,
+        "close_hour_aftermarket": fmt(post["end"]) if post.get("end") else regular_close,
+    }
 
 
 
@@ -148,7 +202,7 @@ def info_generate(symbol_list: list[Stock]):
             stock_symbol = stock.symbol
            
             inf = stock_data.info
-            
+            trading_hours = extract_trading_hours(stock_data)
 
 
             hist = history(share=stock_data, start_date=date(2020, 1, 1), stock_id=stock_id)
@@ -204,7 +258,11 @@ def info_generate(symbol_list: list[Stock]):
                 'industry_id': update_industry( inf.get('industry')),
                 'sector_id': update_sector( inf.get('sector')),
                 'cur_id': update_currency( inf.get("financialCurrency")),
-                'se_id': update_stock_exchange( inf.get("fullExchangeName"),inf.get("currency")),
+                'se_id': update_stock_exchange(
+                    inf.get("fullExchangeName"),
+                    inf.get("currency"),
+                    trading_hours,
+                ),
                 'company_name': inf.get('longName'),
                 'information': inf.get('longBusinessSummary'),
                 'last_reset': datetime.datetime.now().date()

@@ -35,6 +35,18 @@ TABLE_MODLE_MAP = {
 }
 
 
+# Trading-hour columns on StockExchange that we manage together.
+SE_HOUR_FIELDS = (
+    "open_hour",
+    "close_hour",
+    "timezone",
+    "open_hour_premarket",
+    "close_hour_premarket",
+    "open_hour_aftermarket",
+    "close_hour_aftermarket",
+)
+
+
 # connect to the database investments
 with Session() as session:
     try:
@@ -45,6 +57,12 @@ with Session() as session:
         industry_set = { industry.industry_name:industry.industry_id for industry in session.query(Industry).all()}
         stock_exchange_set = { stock_exchange.se_name:stock_exchange.se_id for stock_exchange in se}
         se_currency_set = { stock_exchange.se_name:stock_exchange.currency_id for stock_exchange in se}
+        se_hours_set = {
+            stock_exchange.se_name: {
+                field: getattr(stock_exchange, field, None) for field in SE_HOUR_FIELDS
+            }
+            for stock_exchange in se
+        }
         logger.info(
             "Loaded lookup sets: %d exchanges, %d countries, %d sectors, %d currencies, %d industries",
             len(stock_exchange_set), len(country_set), len(sector_set), len(currency_set), len(industry_set),
@@ -56,38 +74,89 @@ with Session() as session:
 
 
 
-def update_stock_exchange(stock_exchange_name: str,currency:str):
+def update_stock_exchange(
+    stock_exchange_name: str,
+    currency: str,
+    trading_hours: Optional[dict] = None,
+):
     if not stock_exchange_name:
         logger.debug("update_stock_exchange: skipping empty stock_exchange_name")
         return None
 
     currency_id = update_currency(currency)
-    if not stock_exchange_name in stock_exchange_set and stock_exchange_name:
+
+    if stock_exchange_name not in stock_exchange_set:
+        # New exchange row. Trading-hour columns are NOT NULL, so we can only
+        # insert when we actually have hours to fill them with.
+        if not trading_hours:
+            logger.debug(
+                "update_stock_exchange: skipping insert for %s — no trading_hours provided",
+                stock_exchange_name,
+            )
+            return None
         with Session() as session:
             try:
-                stock_exchange = StockExchange(se_name=stock_exchange_name,currency_id=currency_id)
+                hours_values = {
+                    field: trading_hours.get(field, "") for field in SE_HOUR_FIELDS
+                }
+                stock_exchange = StockExchange(
+                    se_name=stock_exchange_name,
+                    currency_id=currency_id,
+                    **hours_values,
+                )
                 session.add(stock_exchange)
                 session.commit()
                 stock_exchange_set[stock_exchange_name] = stock_exchange.se_id
                 se_currency_set[stock_exchange_name] = currency_id
-                logger.info("Inserted stock exchange: %s (id=%s)", stock_exchange_name, stock_exchange.se_id)
+                se_hours_set[stock_exchange_name] = hours_values
+                logger.info(
+                    "Inserted stock exchange: %s (id=%s)",
+                    stock_exchange_name, stock_exchange.se_id,
+                )
             except Exception as e:
                 logger.error("Error during stock exchange insertion %s: %s", stock_exchange_name, e)
                 session.rollback()
             finally:
                 session.close()
-    elif currency_id and currency_id != se_currency_set.get(stock_exchange_name):
+        return stock_exchange_set.get(stock_exchange_name)
+
+    # Existing row: build a diff of currency + trading hours and apply in one statement.
+    updates: dict = {}
+    if currency_id and currency_id != se_currency_set.get(stock_exchange_name):
+        updates["currency_id"] = currency_id
+
+    if trading_hours:
+        cached_hours = se_hours_set.get(stock_exchange_name, {})
+        for field in SE_HOUR_FIELDS:
+            new_value = trading_hours.get(field)
+            if new_value and new_value != cached_hours.get(field):
+                updates[field] = new_value
+
+    if updates:
         with Session() as session:
             try:
-                session.execute(update(StockExchange).where(StockExchange.se_name == stock_exchange_name).values(currency_id=currency_id))
+                session.execute(
+                    update(StockExchange)
+                    .where(StockExchange.se_name == stock_exchange_name)
+                    .values(**updates)
+                )
                 session.commit()
-                se_currency_set[stock_exchange_name] = currency_id
-                logger.info("Updated stock exchange currency: %s -> currency_id=%s", stock_exchange_name, currency_id)
+                if "currency_id" in updates:
+                    se_currency_set[stock_exchange_name] = updates["currency_id"]
+                cached_hours = se_hours_set.setdefault(stock_exchange_name, {})
+                for field in SE_HOUR_FIELDS:
+                    if field in updates:
+                        cached_hours[field] = updates[field]
+                logger.info(
+                    "Updated stock exchange %s: fields=%s",
+                    stock_exchange_name, list(updates.keys()),
+                )
             except Exception as e:
-                logger.error("Error during stock exchange currency update %s: %s", stock_exchange_name, e)
+                logger.error("Error during stock exchange update %s: %s", stock_exchange_name, e)
                 session.rollback()
             finally:
                 session.close()
+
     return stock_exchange_set.get(stock_exchange_name)
 
 def update_country(country_name: str):
