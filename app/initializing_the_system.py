@@ -158,6 +158,35 @@ def get_quarterly_cashflow(share: yf.ticker.Ticker) -> Optional[DataFrame]:
     except:
         return None
 
+
+
+
+# get the TTM income_statement of a stock
+def get_ttm_income_statement(share: yf.ticker.Ticker) -> Optional[DataFrame]:
+    try:
+        i_s = share.ttm_incomestmt.transpose()
+        if i_s.empty:
+            return None
+        i_s.columns = [j.lower().replace(" ", "_") for j in i_s.columns]
+        return i_s
+
+    except:
+        return None
+
+
+# get the TTM cashflow of a stock
+def get_ttm_cashflow(share: yf.ticker.Ticker) -> Optional[DataFrame]:
+    try:
+        c_f = share.ttm_cashflow.transpose()
+        if c_f.empty:
+            return None
+        c_f.columns = [j.lower().replace(" ", "_") for j in c_f.columns]
+        return c_f
+
+    except:
+        return None
+
+
 # For income_statement
 # get the yearly income_statement of a stock
 def get_annual_income_statement(share: yf.ticker.Ticker) -> Optional[DataFrame]:
@@ -250,6 +279,16 @@ def info_generate(symbol_list: list[Stock]):
             quarter_cf = get_quarterly_cashflow(share=stock_data)
             if isinstance(quarter_cf, DataFrame):
                 financial_insert_function(df=quarter_cf, table_name="quarterly_cash_flow",stock_id=stock_id)
+
+            # TTM Income Statement
+            ttm_is = get_ttm_income_statement(share=stock_data)
+            if isinstance(ttm_is, DataFrame):
+                financial_insert_function(df=ttm_is, table_name="ttm_income_statement",stock_id=stock_id)
+
+            # TTM Cashflow
+            ttm_cf = get_ttm_cashflow(share=stock_data)
+            if isinstance(ttm_cf, DataFrame):
+                financial_insert_function(df=ttm_cf, table_name="ttm_cash_flow",stock_id=stock_id)
 
             # update the stock object
             values = {

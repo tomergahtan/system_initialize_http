@@ -208,3 +208,26 @@ class QuarterlyCashFlow(Base):
     def __repr__(self):
         return f"<QuarterlyCashFlow(stock_id={self.stock_id}, publish_date={self.publish_date})>"
 
+
+class TtmIncomeStatement(Base):
+    __tablename__ = 'ttm_income_statement'
+
+    stock_id: Mapped[int] = mapped_column(ForeignKey('stocks.stock_id', ondelete='CASCADE'), primary_key=True)
+    publish_date: Mapped[date] = mapped_column(primary_key=True)
+    data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
+
+    def __repr__(self):
+        return f"<TtmIncomeStatement(stock_id={self.stock_id}, publish_date={self.publish_date})>"
+
+
+class TtmCashFlow(Base):
+    __tablename__ = 'ttm_cash_flow'
+
+    stock_id: Mapped[int] = mapped_column(ForeignKey('stocks.stock_id', ondelete='CASCADE'), primary_key=True)
+    publish_date: Mapped[date] = mapped_column(primary_key=True)
+    data: Mapped[dict] = mapped_column(MutableDict.as_mutable(JSONB), nullable=False)
+
+    def __repr__(self):
+        return f"<TtmCashFlow(stock_id={self.stock_id}, publish_date={self.publish_date})>"
+
+
