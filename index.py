@@ -8,7 +8,10 @@ import time
 import traceback
 from app import logger
 from datetime import datetime
-from app.producer import send_rabbitmq_message
+from app.producer import RabbitMQConnection
+exchange = "screener_refresh"
+routing_key = "screener.refresh"
+producer = RabbitMQConnection(exchange=exchange, routing_key=routing_key)
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -37,7 +40,7 @@ def callback(ch, method, properties, body):
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             logger.info(f"Stock initialized: {stock.symbol}")
             logger.info(f"transfer to screener service: {stock.symbol}")
-            send_rabbitmq_message(message={"stock_id": stock.stock_id, "from": "stock_reset","action": data["action"]}, max_retries=5)
+            producer.send_message(message={"stock_id": stock.stock_id, "from": "stock_reset","action": data["action"]}, max_retries=5)
         else:
             logger.error(f"Stock not found: {data['stock_id']}")
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
