@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from .db_orm import (Stock, Currency, Sector, Country,
                         AnnualBalanceSheet, AnnualIncomeStatement, AnnualCashFlow,
                         QuarterlyBalanceSheet, QuarterlyIncomeStatement,
-                         QuarterlyCashFlow, Irrelevant,
+                         QuarterlyCashFlow, Irrelevant, TtmIncomeStatement, TtmCashFlow,
                         Industry, StockExchange)
 from datetime import datetime
 import pandas as pd
@@ -32,6 +32,8 @@ TABLE_MODLE_MAP = {
     "quarterly_income_statement": QuarterlyIncomeStatement,
     "annual_cash_flow": AnnualCashFlow,
     "quarterly_cash_flow": QuarterlyCashFlow,
+    "ttm_income_statement": TtmIncomeStatement,
+    "ttm_cash_flow": TtmCashFlow,
 }
 
 
@@ -438,13 +440,16 @@ def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
                 df = df.reset_index()
 
             df['publish_date'] = pd.to_datetime(df['publish_date']).dt.date
+            
 
             # 2. Build the records list
             records = []
+            
+                
             for _, row in df.iterrows():
                 # Drop publish_date from the JSON data blob to avoid redundancy
                 data_dict = row.drop(['publish_date']).dropna().to_dict()
-
+                
                 records.append({
                     "stock_id": stock_id,
                     "publish_date": row['publish_date'],
@@ -475,6 +480,7 @@ def financial_insert_function(df: pd.DataFrame, stock_id: int, table_name: str):
         except Exception as e:
             session.rollback()
             logger.error("Error during financial insertion for stock_id=%s table=%s: %s", stock_id, table_name, e)
+            
             success = False
         finally:
             session.close()
